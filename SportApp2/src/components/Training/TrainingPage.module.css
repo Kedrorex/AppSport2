@@ -1,0 +1,107 @@
+/* src/components/Training/TrainingPage.module.css */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--mantine-spacing-md);
+}
+
+.calendar {
+  margin: var(--mantine-spacing-md) 0;
+  background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-6));
+  border-radius: var(--mantine-radius-sm);
+  padding: var(--mantine-spacing-md);
+  border: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+}
+
+.stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: var(--mantine-spacing-md) 0;
+}
+
+.statItem {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-xs);
+}
+
+.statValue {
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 500;
+}
+
+.statLabel {
+  font-size: var(--mantine-font-size-xs);
+  color: light-dark(var(--mantine-color-gray-6), var(--mantine-color-dark-3));
+}
+
+.exerciseCard {
+  background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-8));
+  border-radius: var(--mantine-radius-sm);
+  padding: var(--mantine-spacing-md);
+  border: 1px solid light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-6));
+  margin-bottom: var(--mantine-spacing-md);
+  transition: all 0.2s ease;
+}
+
+.exerciseCard:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--mantine-shadow-sm);
+}
+
+.exerciseHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--mantine-spacing-sm);
+}
+
+.exerciseName {
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 500;
+}
+
+.exerciseIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--mantine-radius-sm);
+  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-7));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.setRow {
+  display: flex;
+  gap: var(--mantine-spacing-xs);
+  margin-top: var(--mantine-spacing-xs);
+  flex-wrap: wrap;
+}
+
+.setItem {
+  flex: 1;
+  min-width: 60px;
+  text-align: center;
+  padding: var(--mantine-spacing-xs);
+  border-radius: var(--mantine-radius-sm);
+  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-7));
+}
+
+.setLabel {
+  font-size: var(--mantine-font-size-xs);
+  color: light-dark(var(--mantine-color-gray-6), var(--mantine-color-dark-3));
+  margin-bottom: var(--mantine-spacing-xs);
+}
+
+.setWeight {
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 500;
+  margin-bottom: var(--mantine-spacing-xs);
+}
+
+.setReps {
+  font-size: var(--mantine-font-size-xs);
+  color: light-dark(var(--mantine-color-gray-6), var(--mantine-color-dark-3));
+}
