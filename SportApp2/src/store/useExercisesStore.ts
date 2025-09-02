@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Exercise } from '../types';
+import type { Exercise } from '../types'; 
 
 interface ExercisesState {
   exercises: Exercise[];

@@ -266,3 +266,21 @@ src/
 7. **Интеграция с бэкендом** - заменить моки на реальные API вызовы
 
 Эта архитектура обеспечивает четкую организацию кода, легкость поддержки и готовность к интеграции с бэкендом на Java + PostgreSQL.
+
+sport-app-backend/
+├── src/
+│   └── main/
+│       ├── java/com/sportapp/
+│       │   ├── SportAppApplication.java
+│       │   ├── config/
+│       │   ├── controller/
+│       │   ├── service/
+│       │   ├── repository/
+│       │   ├── model/
+│       │   ├── dto/
+│       │   └── exception/
+│       └── resources/
+│           ├── application.properties
+│           └── schema.sql (если нужно)
+├── pom.xml
+└── README.md

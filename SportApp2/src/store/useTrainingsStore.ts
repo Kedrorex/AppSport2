@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Training } from '../types';
+import type { Training } from '../types'; 
 
 interface TrainingsState {
   trainings: Training[];
