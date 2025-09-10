@@ -1,3 +1,47 @@
-export * from './user';
-export * from './exercise';
-export * from './training';
+export interface User {
+  id: number;
+  email: string;
+  name: string;
+  createdAt: string;
+}
+
+export interface Exercise {
+  id: number;
+  name: string;
+  description?: string;
+  muscleGroup?: string;
+  exerciseType?: string;
+  createdAt: string;
+}
+
+export interface WorkoutExercise {
+  id: number;
+  workoutId: number;
+  exerciseId: number;
+  exerciseName?: string;
+  sets: number;
+  reps: number;
+  weight?: number;
+  createdAt: string;
+}
+
+export interface Training {
+  id: number;
+  userId: number;
+  workoutDate: string;
+  durationMinutes?: number;
+  notes?: string;
+  workoutExercises?: WorkoutExercise[];
+  createdAt: string;
+}
+
+export interface ExerciseProgress {
+  id: number;
+  userId: number;
+  exerciseId: number;
+  exerciseName?: string;
+  progressDate: string;
+  bestWeight?: number;
+  maxReps?: number;
+  createdAt: string;
+}

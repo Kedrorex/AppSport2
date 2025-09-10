@@ -1,17 +1,13 @@
-// src/components/Training/TrainingPage.tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   IconCalendar,
   IconPlus,
   IconTrash,
-  IconSettings,
   IconDotsVertical,
   IconWeight,
-  IconBarbell,
   IconChevronLeft,
   IconChevronRight,
-  IconClock,
-  IconBell
+  IconClock
 } from '@tabler/icons-react';
 import { 
   Box, 
@@ -26,70 +22,86 @@ import {
   Stack,
   SimpleGrid,
   Flex,
+  Modal,
+  NumberInput,
+  Textarea
 } from '@mantine/core';
-//import { useMediaQuery } from '@mantine/hooks';
-
-interface ExerciseType {
-  id: string;
-  name: string;
-  icon: typeof IconBarbell;
-  sets: Array<{
-    weight: number;
-    reps: number;
-  }>;
-}
+import { useTrainingsStore } from '../../store/useTrainingsStore';
+import { useExercisesStore } from '../../store/useExercisesStore';
+import { AddExerciseModal } from './AddExerciseModal';
 
 export function TrainingPage() {
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  //const isMobile = useMediaQuery('(max-width: 768px)');
+  const { 
+    trainings, 
+    fetchTrainings, 
+    createTraining, 
+    deleteTrainingAsync,
+    addExerciseToTraining
+  } = useTrainingsStore();
   
-  // Пример данных упражнений
-  const exercises: ExerciseType[] = [
-    {
-      id: '1',
-      name: 'Жим над головой · штанга',
-      icon: IconBarbell,
-      sets: [
-        { weight: 32.5, reps: 10 },
-        { weight: 32.5, reps: 9 },
-        { weight: 32.5, reps: 9 },
-        { weight: 32.5, reps: 5 },
-      ],
-    },
-    {
-      id: '2',
-      name: 'Тяга к подбородку · штанга',
-      icon: IconBarbell,
-      sets: [
-        { weight: 30, reps: 10 },
-        { weight: 30, reps: 10 },
-        { weight: 30, reps: 10 },
-        { weight: 30, reps: 10 },
-      ],
-    },
-    {
-      id: '3',
-      name: 'Подъём рук в стороны · гантели',
-      icon: IconBell, // Заменил на существующую иконку
-      sets: [
-        { weight: 15, reps: 12 },
-        { weight: 18, reps: 12 },
-        { weight: 18, reps: 12 },
-        { weight: 18, reps: 12 },
-      ],
-    },
-    {
-      id: '4',
-      name: 'Разведение рук · тренажер',
-      icon: IconBell, // Заменил на существующую иконку
-      sets: [
-        { weight: 20, reps: 10 },
-        { weight: 20, reps: 10 },
-        { weight: 20, reps: 10 },
-        { weight: 20, reps: 10 },
-      ],
-    },
-  ];
+  const { fetchExercises } = useExercisesStore();
+  
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [addTrainingModalOpened, setAddTrainingModalOpened] = useState(false);
+  const [addExerciseModalOpened, setAddExerciseModalOpened] = useState(false);
+  const [selectedWorkoutId, setSelectedWorkoutId] = useState<number | null>(null);
+  
+  // Форма для новой тренировки
+  const [newTraining, setNewTraining] = useState({
+    workoutDate: new Date().toISOString(),
+    durationMinutes: 60,
+    notes: ''
+  });
+
+  // Загружаем данные при монтировании
+  useEffect(() => {
+    fetchTrainings();
+    fetchExercises();
+  }, [fetchTrainings, fetchExercises]);
+
+  // Получаем тренировки за выбранную дату
+  const getTrainingsForDate = () => {
+    const dateStr = selectedDate.toISOString().split('T')[0];
+    return trainings.filter(training => {
+      const trainingDate = new Date(training.workoutDate).toISOString().split('T')[0];
+      return trainingDate === dateStr;
+    });
+  };
+
+  const handleAddTraining = async () => {
+    const trainingData = {
+      ...newTraining,
+      workoutDate: selectedDate.toISOString(),
+      userId: 1 // TODO: Получать ID пользователя из контекста авторизации
+    };
+    
+    const result = await createTraining(trainingData);
+    if (result) {
+      setAddTrainingModalOpened(false);
+      setNewTraining({
+        workoutDate: new Date().toISOString(),
+        durationMinutes: 60,
+        notes: ''
+      });
+    }
+  };
+
+  const handleDeleteTraining = async (id: number) => {
+    await deleteTrainingAsync(id);
+  };
+
+  const handleAddExercise = async (exerciseId: number, sets: number, reps: number, weight?: number) => {
+    if (selectedWorkoutId) {
+      await addExerciseToTraining(selectedWorkoutId, {
+        exerciseId,
+        sets,
+        reps,
+        weight
+      });
+      setAddExerciseModalOpened(false);
+      setSelectedWorkoutId(null);
+    }
+  };
 
   // Функции для календаря
   const getDaysInMonth = (date: Date) => {
@@ -130,6 +142,7 @@ export function TrainingPage() {
   };
 
   const currentDays = generateCalendarDays();
+  const currentTrainings = getTrainingsForDate();
 
   return (
     <Box style={{ height: '100%' }}>
@@ -138,21 +151,18 @@ export function TrainingPage() {
           <Button 
             variant="subtle" 
             leftSection={<IconCalendar size="1rem" />}
-            onClick={() => {}}
           >
             {selectedDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
           </Button>
           <Button 
             variant="subtle" 
             leftSection={<IconClock size="1rem" />}
-            onClick={() => {}}
           >
             Время
           </Button>
           <Button 
             variant="subtle" 
             leftSection={<IconCalendar size="1rem" />}
-            onClick={() => {}}
           >
             Календарь
           </Button>
@@ -229,102 +239,119 @@ export function TrainingPage() {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Text style={{ fontSize: '12px', color: '#888' }}>УПР</Text>
-            <Text style={{ fontSize: '14px', fontWeight: 500 }}>{exercises.length}</Text>
+            <Text style={{ fontSize: '12px', color: '#888' }}>ТРЕН</Text>
+            <Text style={{ fontSize: '14px', fontWeight: 500 }}>{currentTrainings.length}</Text>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Text style={{ fontSize: '12px', color: '#888' }}>ПОДХ</Text>
-            <Text style={{ fontSize: '14px', fontWeight: 500 }}>{exercises.reduce((acc, ex) => acc + ex.sets.length, 0)}</Text>
+            <Text style={{ fontSize: '12px', color: '#888' }}>УПР</Text>
+            <Text style={{ fontSize: '14px', fontWeight: 500 }}>
+              {currentTrainings.reduce((acc, training) => 
+                acc + (training.workoutExercises?.length || 0), 0)}
+            </Text>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Text style={{ fontSize: '12px', color: '#888' }}>КГ</Text>
             <Text style={{ fontSize: '14px', fontWeight: 500 }}>
-              {exercises.reduce((acc, ex) => acc + ex.sets.reduce((sum, set) => sum + set.weight * set.reps, 0), 0)}
+              {currentTrainings.reduce((acc, training) => 
+                acc + (training.workoutExercises?.reduce((sum, ex) => 
+                  sum + ((ex.weight || 0) * (ex.reps || 0)), 0) || 0), 0)}
             </Text>
           </div>
         </Group>
 
         {/* Тренировки */}
         <Stack gap="md">
-          <Group gap="xs">
-            <Badge color="blue">Плечи</Badge>
-            <Badge color="gray">Корпус</Badge>
-          </Group>
+          {currentTrainings.map((training) => (
+            <Card 
+              key={training.id} 
+              style={{ 
+                backgroundColor: '#fff',
+                borderRadius: '4px',
+                padding: '16px',
+                border: '1px solid #e0e0e0',
+                marginBottom: '16px',
+              }}
+            >
+              <div style={{ 
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '16px',
+              }}>
+                <Text style={{ fontSize: '16px', fontWeight: 500 }}>
+                  Тренировка {new Date(training.workoutDate).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                </Text>
+                
+                <Group style={{ display: 'flex', gap: '8px' }}>
+                  <ActionIcon 
+                    variant="subtle" 
+                    color="blue" 
+                    onClick={() => {
+                      setSelectedWorkoutId(training.id);
+                      setAddExerciseModalOpened(true);
+                    }}
+                  >
+                    <IconPlus size="1rem" />
+                  </ActionIcon>
+                  <Menu shadow="md" width={200}>
+                    <Menu.Target>
+                      <ActionIcon variant="subtle" color="gray">
+                        <IconDotsVertical size="1rem" />
+                      </ActionIcon>
+                    </Menu.Target>
+                    <Menu.Dropdown>
+                      <Menu.Item 
+                        leftSection={<IconTrash size="1rem" />} 
+                        color="red"
+                        onClick={() => handleDeleteTraining(training.id)}
+                      >
+                        Удалить
+                      </Menu.Item>
+                    </Menu.Dropdown>
+                  </Menu>
+                </Group>
+              </div>
 
-          {exercises.map((exercise) => {
-            const IconComponent = exercise.icon;
-            return (
-              <Card 
-                key={exercise.id} 
-                style={{ 
-                  backgroundColor: '#fff',
-                  borderRadius: '4px',
-                  padding: '16px',
-                  border: '1px solid #e0e0e0',
-                  marginBottom: '16px',
-                }}
-              >
-                <div style={{ 
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: '8px',
-                }}>
-                  <Group gap="xs">
-                    <div style={{ 
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '4px',
-                      backgroundColor: '#f5f5f5',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}>
-                      <IconComponent size="1.5rem" />
-                    </div>
-                    <Text style={{ fontSize: '14px', fontWeight: 500 }}>{exercise.name}</Text>
-                  </Group>
-                  
-                  <Group style={{ display: 'flex', gap: '8px' }}>
-                    <ActionIcon variant="subtle" color="green" onClick={() => {}}>
-                      <IconPlus size="1rem" />
-                    </ActionIcon>
-                    <Menu shadow="md" width={200}>
-                      <Menu.Target>
-                        <ActionIcon variant="subtle" color="gray">
-                          <IconDotsVertical size="1rem" />
-                        </ActionIcon>
-                      </Menu.Target>
-                      <Menu.Dropdown>
-                        <Menu.Item leftSection={<IconSettings size="1rem" />}>Настройки</Menu.Item>
-                        <Menu.Item leftSection={<IconTrash size="1rem" />} color="red">Удалить</Menu.Item>
-                      </Menu.Dropdown>
-                    </Menu>
-                  </Group>
-                </div>
+              {training.notes && (
+                <Text size="sm" c="dimmed" mb="md">
+                  {training.notes}
+                </Text>
+              )}
 
-                <div style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
-                  {exercise.sets.map((set, index) => (
-                    <div 
-                      key={index} 
-                      style={{ 
-                        flex: 1,
-                        minWidth: '60px',
-                        textAlign: 'center',
-                        padding: '8px',
-                        borderRadius: '4px',
-                        backgroundColor: '#f5f5f5',
-                      }}
-                    >
-                      <Text style={{ fontSize: '12px', color: '#888', marginBottom: '4px' }}>Сет {index + 1}</Text>
-                      <Text style={{ fontSize: '14px', fontWeight: 500, marginBottom: '4px' }}>{set.weight} кг</Text>
-                      <Text style={{ fontSize: '12px', color: '#888' }}>{set.reps} пвт</Text>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            );
-          })}
+              {/* Упражнения в тренировке */}
+              <Stack gap="md">
+                {training.workoutExercises?.map((exercise) => (
+                  <Card key={exercise.id} p="xs" withBorder>
+                    <Group justify="space-between" mb="xs">
+                      <Text size="sm" fw={500}>
+                        {exercise.exerciseName || `Упражнение #${exercise.exerciseId}`}
+                      </Text>
+                      <Badge variant="light">
+                        {exercise.sets}×{exercise.reps} {exercise.weight ? `${exercise.weight}кг` : ''}
+                      </Badge>
+                    </Group>
+                    
+                    <Group gap="xs">
+                      {Array.from({ length: exercise.sets }).map((_, index) => (
+                        <Paper key={index} p="xs" bg="#f5f5f5" style={{ minWidth: 60, textAlign: 'center' }}>
+                          <Text size="xs" c="dimmed">Сет {index + 1}</Text>
+                          <Text size="sm" fw={500}>
+                            {exercise.weight || 0}кг × {exercise.reps}
+                          </Text>
+                        </Paper>
+                      ))}
+                    </Group>
+                  </Card>
+                ))}
+              </Stack>
+            </Card>
+          ))}
+
+          {currentTrainings.length === 0 && (
+            <Text c="dimmed" ta="center" py="xl">
+              Нет тренировок на выбранную дату
+            </Text>
+          )}
         </Stack>
 
         {/* Кнопка добавления */}
@@ -340,12 +367,68 @@ export function TrainingPage() {
             variant="filled" 
             color="green" 
             rightSection={<IconPlus size="1rem" />}
-            onClick={() => {}}
+            onClick={() => setAddTrainingModalOpened(true)}
           >
-            Добавить
+            Добавить тренировку
           </Button>
         </Group>
       </Box>
+
+      {/* Модальное окно добавления тренировки */}
+      <Modal
+        opened={addTrainingModalOpened}
+        onClose={() => setAddTrainingModalOpened(false)}
+        title="Новая тренировка"
+        size="md"
+      >
+        <Box>
+          <Text size="sm" mb="xs">
+            Дата: {selectedDate.toLocaleDateString('ru-RU')}
+          </Text>
+          
+          <NumberInput
+            label="Длительность (минуты)"
+            value={newTraining.durationMinutes}
+            onChange={(value) => typeof value === 'number' && setNewTraining(prev => ({
+              ...prev,
+              durationMinutes: value
+            }))}
+            min={1}
+            mb="md"
+          />
+          
+          <Textarea
+            label="Заметки"
+            value={newTraining.notes}
+            onChange={(event) => setNewTraining(prev => ({
+              ...prev,
+              notes: event.target.value
+            }))}
+            placeholder="Добавьте заметки к тренировке..."
+            mb="md"
+          />
+          
+          <Group justify="flex-end" mt="md">
+            <Button variant="subtle" onClick={() => setAddTrainingModalOpened(false)}>
+              Отмена
+            </Button>
+            <Button onClick={handleAddTraining}>
+              Создать
+            </Button>
+          </Group>
+        </Box>
+      </Modal>
+
+      {/* Модальное окно добавления упражнения */}
+      <AddExerciseModal
+        opened={addExerciseModalOpened}
+        onClose={() => {
+          setAddExerciseModalOpened(false);
+          setSelectedWorkoutId(null);
+        }}
+        onAdd={handleAddExercise}
+        workoutId={selectedWorkoutId || 0}
+      />
     </Box>
   );
 }
