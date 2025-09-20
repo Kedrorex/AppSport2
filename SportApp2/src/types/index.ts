@@ -5,6 +5,18 @@ export interface User {
   createdAt: string;
 }
 
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  name: string;
+}
+
+// Если у тебя есть другие типы, они тоже должны быть здесь
 export interface Exercise {
   id: number;
   name: string;

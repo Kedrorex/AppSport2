@@ -1,3 +1,4 @@
+//WorkoutController.java
 package com.sportapp.controller;
 
 import com.sportapp.dto.WorkoutDTO;
@@ -5,6 +6,7 @@ import com.sportapp.mapper.WorkoutMapper;
 import com.sportapp.model.User;
 import com.sportapp.model.Workout;
 import com.sportapp.model.WorkoutExercise;
+import com.sportapp.security.UserDetailsImpl;
 import com.sportapp.service.WorkoutService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -26,7 +28,8 @@ public class WorkoutController {
     
     @GetMapping
     public ResponseEntity<List<WorkoutDTO>> getWorkouts(Authentication authentication) {
-        User user = (User) authentication.getPrincipal();
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        User user = userDetails.getUser();
         List<Workout> workouts = workoutService.getWorkoutsByUser(user);
         List<WorkoutDTO> workoutDTOs = workouts.stream()
             .map(workoutMapper::toDTO)
