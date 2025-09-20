@@ -1,6 +1,5 @@
-// src/components/NavbarSegmented.tsx
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Icon2fa,
   IconBellRinging,
@@ -22,6 +21,7 @@ import {
   IconMoon,
 } from '@tabler/icons-react';
 import { SegmentedControl, Text, ActionIcon } from '@mantine/core';
+import { useUserStore } from '../store/useUserStore';
 import classes from './NavbarSegmented.module.css';
 
 // 🔧 Настройки названий секций в одном месте
@@ -71,6 +71,13 @@ const tabs = {
 export function NavbarSegmented({ toggleColorScheme, colorScheme }: NavbarSegmentedProps) {
   const [section, setSection] = useState<SectionKey>(SECTION_CONFIG.profile.value);
   const [active, setActive] = useState('Дашборт');
+  const navigate = useNavigate();
+  const { logout } = useUserStore();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   const links = tabs[section].map((item) => (
     <Link
@@ -142,7 +149,14 @@ export function NavbarSegmented({ toggleColorScheme, colorScheme }: NavbarSegmen
           <span>Сменить профиль</span>
         </a>
 
-        <a href="#" className={classes.link} onClick={(e) => e.preventDefault()}>
+        <a 
+          href="#" 
+          className={classes.link} 
+          onClick={(e) => {
+            e.preventDefault();
+            handleLogout();
+          }}
+        >
           <IconLogout className={classes.linkIcon} stroke={1.5} />
           <span>Выйти</span>
         </a>

@@ -1,0 +1,153 @@
+# =========================
+# Общие файлы и директории
+# =========================
+*.log
+*.env.local
+*.env.*.local
+.env*.local
+node_modules
+dist
+dist-ssr
+*.local
+
+# =========================
+# IntelliJ IDEA / VS Code
+# =========================
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.vscode
+
+# =========================
+# Операционная система
+# =========================
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+ntuser.dat
+*.lnk
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.Spotlight-V100
+.Trashes
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+
+# =========================
+# Java / Spring Boot
+# =========================
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+replay_pid*
+
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# Gradle
+.gradle/
+build/
+
+# Spring Boot
+.m2/
+!**/src/main/**/maven/
+!**/src/main/**/resources/application*.yml
+!**/src/main/**/resources/application*.yaml
+!**/src/main/**/resources/application*.properties
+
+# =========================
+# Node.js / npm / yarn
+# =========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm/
+.yarn-integrity
+.yarnrc.yml
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+.pnp/
+
+# =========================
+# Vite
+# =========================
+.vite/
+.env*.local
+
+# =========================
+# Тестирование
+# =========================
+coverage/
+*.lcov
+
+# =========================
+# Документация
+# =========================
+*.pdf
+*.docx
+*.xlsx
+
+# =========================
+# Базы данных (если локальные файлы)
+# =========================
+*.h2.db
+*.mv.db
+*.trace.db
+
+# =========================
+# DevTools
+# =========================
+*.swp
+*.swo
+*~
+
+# =========================
+# Специфично для проекта
+# =========================
+# Если у тебя есть локальные конфиги
+config/local.*
+.env
+
+# =========================
+# Ошибки сборки
+# =========================
+*.err
+*.log
