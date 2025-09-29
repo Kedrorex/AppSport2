@@ -1,3 +1,4 @@
+// TrainingPage.tsx
 import { useState, useEffect } from 'react';
 import {
   IconCalendar,
@@ -21,10 +22,7 @@ import {
   Card,
   Stack,
   SimpleGrid,
-  Flex,
-  Modal,
-  NumberInput,
-  Textarea
+  Flex
 } from '@mantine/core';
 import { useTrainingsStore } from '../../store/useTrainingsStore';
 import { useExercisesStore } from '../../store/useExercisesStore';
@@ -42,16 +40,8 @@ export function TrainingPage() {
   const { fetchExercises } = useExercisesStore();
   
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [addTrainingModalOpened, setAddTrainingModalOpened] = useState(false);
   const [addExerciseModalOpened, setAddExerciseModalOpened] = useState(false);
   const [selectedWorkoutId, setSelectedWorkoutId] = useState<number | null>(null);
-  
-  // Форма для новой тренировки
-  const [newTraining, setNewTraining] = useState({
-    workoutDate: new Date().toISOString(),
-    durationMinutes: 60,
-    notes: ''
-  });
 
   // Загружаем данные при монтировании
   useEffect(() => {
@@ -68,22 +58,28 @@ export function TrainingPage() {
     });
   };
 
+    // Новый обработчик - создание тренировки и открытие модала добавления упражнений
   const handleAddTraining = async () => {
+    // Создаем пустую тренировку на выбранную дату
     const trainingData = {
-      ...newTraining,
       workoutDate: selectedDate.toISOString(),
-      userId: 1 // TODO: Получать ID пользователя из контекста авторизации
+      userId: 1, // TODO: Получать ID пользователя из контекста авторизации
+      durationMinutes: 60,
+      notes: ''
     };
-    
-    const result = await createTraining(trainingData);
+
+    console.log("1. Начинаем создание тренировки с данными:", trainingData); // <-- Добавь это
+
+    const result = await createTraining(trainingData); // вот после этого момента
+
+    console.log("2. Результат создания тренировки:", result); // <-- Добавь это
+
     if (result) {
-      setAddTrainingModalOpened(false);
-      setNewTraining({
-        workoutDate: new Date().toISOString(),
-        durationMinutes: 60,
-        notes: ''
-      });
+      // Открываем модал для добавления упражнений в новую тренировку
+      setSelectedWorkoutId(result.id);
+      setAddExerciseModalOpened(true);
     }
+    console.log("3. Конец функции handleAddTraining"); // <-- Добавь это
   };
 
   const handleDeleteTraining = async (id: number) => {
@@ -367,57 +363,12 @@ export function TrainingPage() {
             variant="filled" 
             color="green" 
             rightSection={<IconPlus size="1rem" />}
-            onClick={() => setAddTrainingModalOpened(true)}
+            onClick={handleAddTraining}
           >
             Добавить тренировку
           </Button>
         </Group>
       </Box>
-
-      {/* Модальное окно добавления тренировки */}
-      <Modal
-        opened={addTrainingModalOpened}
-        onClose={() => setAddTrainingModalOpened(false)}
-        title="Новая тренировка"
-        size="md"
-      >
-        <Box>
-          <Text size="sm" mb="xs">
-            Дата: {selectedDate.toLocaleDateString('ru-RU')}
-          </Text>
-          
-          <NumberInput
-            label="Длительность (минуты)"
-            value={newTraining.durationMinutes}
-            onChange={(value) => typeof value === 'number' && setNewTraining(prev => ({
-              ...prev,
-              durationMinutes: value
-            }))}
-            min={1}
-            mb="md"
-          />
-          
-          <Textarea
-            label="Заметки"
-            value={newTraining.notes}
-            onChange={(event) => setNewTraining(prev => ({
-              ...prev,
-              notes: event.target.value
-            }))}
-            placeholder="Добавьте заметки к тренировке..."
-            mb="md"
-          />
-          
-          <Group justify="flex-end" mt="md">
-            <Button variant="subtle" onClick={() => setAddTrainingModalOpened(false)}>
-              Отмена
-            </Button>
-            <Button onClick={handleAddTraining}>
-              Создать
-            </Button>
-          </Group>
-        </Box>
-      </Modal>
 
       {/* Модальное окно добавления упражнения */}
       <AddExerciseModal
