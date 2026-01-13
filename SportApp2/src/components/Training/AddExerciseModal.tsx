@@ -13,14 +13,16 @@ import {
   Text,
   ActionIcon
 } from '@mantine/core';
+import { DatePickerInput, type DateValue } from '@mantine/dates'; // ✅ Импортируем как type
 import { IconPlus, IconTrash, IconSearch, IconFilter } from '@tabler/icons-react';
 import { useExercisesStore } from '../../store/useExercisesStore';
 
 interface AddExerciseModalProps {
   opened: boolean;
   onClose: () => void;
-  onAdd: (exerciseId: number, sets: number, reps: number, weight?: number) => void;
+  onAdd: (exerciseId: number, sets: number, reps: number, weight?: number, date?: Date) => void;
   workoutId: number;
+  selectedDate?: Date; // Добавим пропс даты из TrainingPage
 }
 
 interface SetData {
@@ -29,12 +31,18 @@ interface SetData {
   weight: number;
 }
 
-export function AddExerciseModal({ opened, onClose, onAdd }: AddExerciseModalProps) {
+export function AddExerciseModal({ 
+  opened, 
+  onClose, 
+  onAdd, 
+  selectedDate 
+}: AddExerciseModalProps) {
   const { exercises, fetchExercises, searchExercises, loading } = useExercisesStore();
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
   const [setsData, setSetsData] = useState<SetData[]>([{ id: 1, reps: 10, weight: 0 }]);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [muscleGroupFilter, setMuscleGroupFilter] = useState<string>('');
+  const [date, setDate] = useState<Date | null>(selectedDate || null); // Используем переданную дату по умолчанию
 
   // Загружаем упражнения при открытии модального окна
   useEffect(() => {
@@ -116,7 +124,7 @@ export function AddExerciseModal({ opened, onClose, onAdd }: AddExerciseModalPro
   };
 
   const handleSubmit = () => {
-    if (selectedExercise && setsData.length > 0) {
+    if (selectedExercise && setsData.length > 0 && date) {
       // Для совместимости с текущим API, используем средние значения
       const totalReps = setsData.reduce((sum, set) => sum + set.reps, 0);
       const totalWeight = setsData.reduce((sum, set) => sum + set.weight, 0);
@@ -127,7 +135,8 @@ export function AddExerciseModal({ opened, onClose, onAdd }: AddExerciseModalPro
         parseInt(selectedExercise),
         setsData.length, // количество подходов
         avgReps,         // среднее количество повторений
-        avgWeight > 0 ? avgWeight : undefined // средний вес
+        avgWeight > 0 ? avgWeight : undefined, // средний вес
+        date             // передаём дату
       );
       
       // Сброс формы
@@ -135,6 +144,7 @@ export function AddExerciseModal({ opened, onClose, onAdd }: AddExerciseModalPro
       setSetsData([{ id: 1, reps: 10, weight: 0 }]);
       setSearchQuery('');
       setMuscleGroupFilter('');
+      setDate(selectedDate || null); // Сброс до даты по умолчанию
     }
   };
 
@@ -206,6 +216,15 @@ export function AddExerciseModal({ opened, onClose, onAdd }: AddExerciseModalPro
           mb="md"
           searchable
           nothingFoundMessage={loading ? "Загрузка..." : "Упражнения не найдены"}
+        />
+
+        {/* Выбор даты */}
+        <DatePickerInput
+          label="Дата добавления"
+          value={date}
+          onChange={(value: DateValue) => setDate(value as Date | null)} // ✅ Используем DateValue и кастим
+          required
+          mb="md"
         />
 
         {/* Подходы */}
@@ -289,7 +308,7 @@ export function AddExerciseModal({ opened, onClose, onAdd }: AddExerciseModalPro
           </Button>
           <Button 
             onClick={handleSubmit}
-            disabled={!selectedExercise || setsData.length === 0}
+            disabled={!selectedExercise || setsData.length === 0 || !date}
           >
             Добавить упражнение
           </Button>

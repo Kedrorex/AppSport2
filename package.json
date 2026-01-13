@@ -1,6 +1,12 @@
 {
   "dependencies": {
+    "@mantine/core": "^7.17.8",
+    "@mantine/dates": "^7.17.8",
+    "@mantine/hooks": "^7.17.8",
+    "@mantine/modals": "^7.17.8",
     "axios": "^1.11.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "zustand": "^5.0.8"
   },
   "devDependencies": {

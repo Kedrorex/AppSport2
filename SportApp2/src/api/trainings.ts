@@ -41,8 +41,7 @@ export const trainingsApi = {
   }): Promise<WorkoutExercise> => {
     const response = await api.post<WorkoutExercise>(
       `/api/workouts/${workoutId}/exercises`,
-      null,
-      { params: exerciseData }
+      exerciseData // Передаём данные в теле, а не через params
     );
     return response.data;
   },

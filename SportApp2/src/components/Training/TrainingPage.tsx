@@ -58,45 +58,62 @@ export function TrainingPage() {
     });
   };
 
-    // Новый обработчик - создание тренировки и открытие модала добавления упражнений
-  const handleAddTraining = async () => {
-    // Создаем пустую тренировку на выбранную дату
-    const trainingData = {
-      workoutDate: selectedDate.toISOString(),
-      userId: 1, // TODO: Получать ID пользователя из контекста авторизации
-      durationMinutes: 60,
-      notes: ''
-    };
-
-    console.log("1. Начинаем создание тренировки с данными:", trainingData); // <-- Добавь это
-
-    const result = await createTraining(trainingData); // вот после этого момента
-
-    console.log("2. Результат создания тренировки:", result); // <-- Добавь это
-
-    if (result) {
-      // Открываем модал для добавления упражнений в новую тренировку
-      setSelectedWorkoutId(result.id);
-      setAddExerciseModalOpened(true);
-    }
-    console.log("3. Конец функции handleAddTraining"); // <-- Добавь это
+  // Новый обработчик - открытие модалки для добавления упражнения
+  const handleAddExercise = () => {
+    setSelectedWorkoutId(null); // Сбросим ID, чтобы модалка не привязывалась к тренировке
+    setAddExerciseModalOpened(true);
   };
 
   const handleDeleteTraining = async (id: number) => {
     await deleteTrainingAsync(id);
   };
 
-  const handleAddExercise = async (exerciseId: number, sets: number, reps: number, weight?: number) => {
-    if (selectedWorkoutId) {
-      await addExerciseToTraining(selectedWorkoutId, {
+  // Новый обработчик - добавление упражнения в тренировку на дату
+  const handleAddExerciseToCalendar = async (
+    exerciseId: number, 
+    sets: number, 
+    reps: number, 
+    weight?: number,
+    date?: Date
+  ) => {
+    // Используем дату из модалки, если указана, иначе текущую
+    const actualDate = date || selectedDate;
+    const dateStr = actualDate.toISOString().split('T')[0];
+    
+    const existingTraining = trainings.find(training => { // ✅ const вместо let
+      const trainingDate = new Date(training.workoutDate).toISOString().split('T')[0];
+      return trainingDate === dateStr;
+    });
+
+    let workoutId = existingTraining?.id;
+
+    // Если нет тренировки на эту дату, создаём новую
+    if (!workoutId) {
+      const trainingData = {
+        workoutDate: actualDate.toISOString(),
+        userId: 1, // TODO: Получать ID пользователя из контекста авторизации
+        durationMinutes: 60,
+        notes: ''
+      };
+
+      const result = await createTraining(trainingData);
+      if (result) {
+        workoutId = result.id;
+      } else {
+        console.error("Не удалось создать тренировку");
+        return;
+      }
+    }
+
+    if (workoutId) {
+      await addExerciseToTraining(workoutId, {
         exerciseId,
         sets,
         reps,
         weight
       });
-      setAddExerciseModalOpened(false);
-      setSelectedWorkoutId(null);
     }
+    setAddExerciseModalOpened(false);
   };
 
   // Функции для календаря
@@ -350,7 +367,7 @@ export function TrainingPage() {
           )}
         </Stack>
 
-        {/* Кнопка добавления */}
+        {/* Кнопка добавления упражнения */}
         <Group justify="space-between" mt="md">
           <Button 
             variant="outline" 
@@ -363,9 +380,9 @@ export function TrainingPage() {
             variant="filled" 
             color="green" 
             rightSection={<IconPlus size="1rem" />}
-            onClick={handleAddTraining}
+            onClick={handleAddExercise}
           >
-            Добавить тренировку
+            Добавить упражнение
           </Button>
         </Group>
       </Box>
@@ -377,8 +394,9 @@ export function TrainingPage() {
           setAddExerciseModalOpened(false);
           setSelectedWorkoutId(null);
         }}
-        onAdd={handleAddExercise}
+        onAdd={handleAddExerciseToCalendar}
         workoutId={selectedWorkoutId || 0}
+        selectedDate={selectedDate} // Передаём дату в модалку
       />
     </Box>
   );

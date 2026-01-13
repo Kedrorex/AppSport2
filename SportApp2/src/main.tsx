@@ -1,13 +1,14 @@
 // src/main.tsx
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
-import { MantineProvider } from '@mantine/core'; // ✅ Убрал неиспользуемый ColorSchemeScript
+import { MantineProvider } from '@mantine/core';
+import { ModalsProvider } from '@mantine/modals';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import '@mantine/core/styles.css';
 
+
 export function Main() {
-  // Получаем сохраненную тему из localStorage или используем системную
   const [colorScheme, setColorScheme] = useState<'light' | 'dark'>('light');
 
   useEffect(() => {
@@ -15,7 +16,6 @@ export function Main() {
     if (savedTheme) {
       setColorScheme(savedTheme as 'light' | 'dark');
     } else {
-      // Проверяем системную тему
       const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
       setColorScheme(systemTheme);
     }
@@ -32,9 +32,12 @@ export function Main() {
       defaultColorScheme="light"
       forceColorScheme={colorScheme}
     >
-      <BrowserRouter>
-        <App toggleColorScheme={toggleColorScheme} colorScheme={colorScheme} />
-      </BrowserRouter>
+      {/* 👇 Добавляем ModalsProvider */}
+      <ModalsProvider>
+        <BrowserRouter>
+          <App toggleColorScheme={toggleColorScheme} colorScheme={colorScheme} />
+        </BrowserRouter>
+      </ModalsProvider>
     </MantineProvider>
   );
 }
