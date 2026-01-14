@@ -284,3 +284,8 @@ sport-app-backend/
 │           └── schema.sql (если нужно)
 ├── pom.xml
 └── README.md
+
+### Установка и запуск
+cd SportApp2
+npm install
+npm run dev

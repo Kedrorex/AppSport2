@@ -2,7 +2,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   Modal,
-  Select,
   NumberInput,
   Button,
   Group,
@@ -11,10 +10,13 @@ import {
   Divider,
   Paper,
   Text,
-  ActionIcon
+  ActionIcon,
+  Stack,
+  Badge,
+  Collapse
 } from '@mantine/core';
-import { DatePickerInput, type DateValue } from '@mantine/dates'; // ✅ Импортируем как type
-import { IconPlus, IconTrash, IconSearch, IconFilter } from '@tabler/icons-react';
+import { DatePickerInput, type DateValue } from '@mantine/dates';
+import { IconPlus, IconTrash, IconSearch } from '@tabler/icons-react';
 import { useExercisesStore } from '../../store/useExercisesStore';
 
 interface AddExerciseModalProps {
@@ -22,7 +24,7 @@ interface AddExerciseModalProps {
   onClose: () => void;
   onAdd: (exerciseId: number, sets: number, reps: number, weight?: number, date?: Date) => void;
   workoutId: number;
-  selectedDate?: Date; // Добавим пропс даты из TrainingPage
+  selectedDate?: Date;
 }
 
 interface SetData {
@@ -41,38 +43,30 @@ export function AddExerciseModal({
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
   const [setsData, setSetsData] = useState<SetData[]>([{ id: 1, reps: 10, weight: 0 }]);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [muscleGroupFilter, setMuscleGroupFilter] = useState<string>('');
-  const [date, setDate] = useState<Date | null>(selectedDate || null); // Используем переданную дату по умолчанию
+  const [selectedMuscleGroups, setSelectedMuscleGroups] = useState<string[]>([]);
+  const [date, setDate] = useState<Date | null>(selectedDate || null);
 
-  // Загружаем упражнения при открытии модального окна
   useEffect(() => {
     if (opened && exercises.length === 0) {
       fetchExercises();
     }
   }, [opened, exercises.length, fetchExercises]);
 
-  // Фильтрация упражнений
   const filteredExercises = useMemo(() => {
     let filtered = exercises;
-
-    // Фильтрация по поисковому запросу
     if (searchQuery) {
       filtered = filtered.filter(exercise => 
         exercise.name.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
-
-    // Фильтрация по группе мышц
-    if (muscleGroupFilter) {
+    if (selectedMuscleGroups.length > 0) {
       filtered = filtered.filter(exercise => 
-        exercise.muscleGroup?.toLowerCase() === muscleGroupFilter.toLowerCase()
+        exercise.muscleGroup && selectedMuscleGroups.includes(exercise.muscleGroup)
       );
     }
-
     return filtered;
-  }, [exercises, searchQuery, muscleGroupFilter]);
+  }, [exercises, searchQuery, selectedMuscleGroups]);
 
-  // Получаем уникальные группы мышц для фильтра
   const muscleGroups = useMemo(() => {
     const groups = exercises
       .map(ex => ex.muscleGroup)
@@ -80,43 +74,35 @@ export function AddExerciseModal({
     return groups.sort();
   }, [exercises]);
 
-  // Обработчик поиска с задержкой
+  // Поиск только по названию (фильтрация по группам — на клиенте)
   useEffect(() => {
-    if (searchQuery.length > 2 || muscleGroupFilter) {
+    if (searchQuery.length > 2) {
       const timeoutId = setTimeout(() => {
-        searchExercises({ 
-          name: searchQuery || undefined, 
-          muscleGroup: muscleGroupFilter || undefined 
-        });
+        searchExercises({ name: searchQuery });
       }, 300);
       return () => clearTimeout(timeoutId);
-    } else if (searchQuery.length === 0 && !muscleGroupFilter) {
-      // Если поиск пустой, загружаем все упражнения
+    } else if (searchQuery.length === 0) {
       fetchExercises();
     }
-  }, [searchQuery, muscleGroupFilter, searchExercises, fetchExercises]);
+  }, [searchQuery, fetchExercises, searchExercises]);
 
-  // Добавить подход
   const addSet = () => {
     const newId = setsData.length > 0 ? Math.max(...setsData.map(s => s.id)) + 1 : 1;
     setSetsData([...setsData, { id: newId, reps: 10, weight: 0 }]);
   };
 
-  // Удалить подход
   const removeSet = (id: number) => {
     if (setsData.length > 1) {
       setSetsData(setsData.filter(set => set.id !== id));
     }
   };
 
-  // Изменить повторения для подхода
   const updateSetReps = (id: number, reps: number) => {
     setSetsData(setsData.map(set => 
       set.id === id ? { ...set, reps } : set
     ));
   };
 
-  // Изменить вес для подхода
   const updateSetWeight = (id: number, weight: number) => {
     setSetsData(setsData.map(set => 
       set.id === id ? { ...set, weight } : set
@@ -125,7 +111,6 @@ export function AddExerciseModal({
 
   const handleSubmit = () => {
     if (selectedExercise && setsData.length > 0 && date) {
-      // Для совместимости с текущим API, используем средние значения
       const totalReps = setsData.reduce((sum, set) => sum + set.reps, 0);
       const totalWeight = setsData.reduce((sum, set) => sum + set.weight, 0);
       const avgReps = Math.round(totalReps / setsData.length);
@@ -133,27 +118,32 @@ export function AddExerciseModal({
       
       onAdd(
         parseInt(selectedExercise),
-        setsData.length, // количество подходов
-        avgReps,         // среднее количество повторений
-        avgWeight > 0 ? avgWeight : undefined, // средний вес
-        date             // передаём дату
+        setsData.length,
+        avgReps,
+        avgWeight > 0 ? avgWeight : undefined,
+        date
       );
       
-      // Сброс формы
       setSelectedExercise(null);
       setSetsData([{ id: 1, reps: 10, weight: 0 }]);
       setSearchQuery('');
-      setMuscleGroupFilter('');
-      setDate(selectedDate || null); // Сброс до даты по умолчанию
+      setSelectedMuscleGroups([]);
+      setDate(selectedDate || null);
     }
   };
 
-  // Сброс фильтров
   const handleResetFilters = () => {
     setSearchQuery('');
-    setMuscleGroupFilter('');
+    setSelectedMuscleGroups([]);
     setSelectedExercise(null);
   };
+
+  // Сброс подходов при смене упражнения
+  useEffect(() => {
+    if (selectedExercise) {
+      setSetsData([{ id: 1, reps: 10, weight: 0 }]);
+    }
+  }, [selectedExercise]);
 
   return (
     <Modal
@@ -162,33 +152,75 @@ export function AddExerciseModal({
       title="Добавить упражнение"
       size="lg"
       centered
+      styles={{
+        body: {
+          display: 'flex',
+          flexDirection: 'column',
+          maxHeight: '80vh',
+          padding: 0,
+        },
+      }}
     >
-      <Box>
-        {/* Поля поиска и фильтрации */}
-        <TextInput
-          label="Поиск упражнений"
-          placeholder="Введите название упражнения..."
-          value={searchQuery}
-          onChange={(event) => setSearchQuery(event.target.value)}
-          mb="sm"
-          leftSection={<IconSearch size="1rem" />}
-        />
+      {/* Прокручиваемая область */}
+      <Box
+        style={{
+          flex: 1,
+          overflowY: 'auto',
+          padding: 'var(--mantine-spacing-md)',
+          paddingBottom: '70px', // отступ для плавающих кнопок
+        }}
+      >
+        {/* Поиск и дата в одной строке */}
+        <Group grow mb="md">
+          <TextInput
+            label="Поиск упражнений"
+            placeholder="Введите название..."
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            leftSection={<IconSearch size="1rem" />}
+          />
+          
+          <DatePickerInput
+            label="Дата добавления"
+            value={date}
+            onChange={(value: DateValue) => setDate(value as Date | null)}
+            required
+          />
+        </Group>
 
-        <Select
-          label="Группа мышц"
-          placeholder="Выберите группу мышц"
-          data={[
-            { value: '', label: 'Все группы' },
-            ...muscleGroups.map(group => ({ value: group, label: group }))
-          ]}
-          value={muscleGroupFilter}
-          onChange={(value) => setMuscleGroupFilter(value || '')}
-          clearable
-          mb="md"
-          leftSection={<IconFilter size="1rem" />}
-        />
+        {/* Ряд кнопок: группы мышц */}
+        <Text size="sm" fw={500} mb="xs">Группа мышц:</Text>
+        <Group gap="xs" wrap="wrap">
+          <Button
+            size="compact-sm"
+            variant={selectedMuscleGroups.length === 0 ? 'filled' : 'outline'}
+            onClick={() => setSelectedMuscleGroups([])}
+          >
+            Все
+          </Button>
+          {muscleGroups.map((group) => {
+            const isSelected = selectedMuscleGroups.includes(group);
+            return (
+              <Button
+                key={group}
+                size="compact-sm"
+                variant={isSelected ? 'filled' : 'outline'}
+                onClick={() => {
+                  if (isSelected) {
+                    setSelectedMuscleGroups(selectedMuscleGroups.filter(g => g !== group));
+                  } else {
+                    setSelectedMuscleGroups([...selectedMuscleGroups, group]);
+                  }
+                }}
+              >
+                {group}
+              </Button>
+            );
+          })}
+        </Group>
+        <Box h="8px" />
 
-        {(searchQuery || muscleGroupFilter) && (
+        {(searchQuery || selectedMuscleGroups.length > 0) && (
           <Group justify="flex-end" mb="sm">
             <Button 
               variant="subtle" 
@@ -202,118 +234,142 @@ export function AddExerciseModal({
 
         <Divider my="sm" />
 
-        {/* Выбор упражнения */}
-        <Select
-          label="Упражнение"
-          placeholder="Выберите упражнение"
-          data={filteredExercises.map(ex => ({
-            value: ex.id.toString(),
-            label: `${ex.name}${ex.muscleGroup ? ` (${ex.muscleGroup})` : ''}`
-          }))}
-          value={selectedExercise}
-          onChange={setSelectedExercise}
-          required
-          mb="md"
-          searchable
-          nothingFoundMessage={loading ? "Загрузка..." : "Упражнения не найдены"}
-        />
-
-        {/* Выбор даты */}
-        <DatePickerInput
-          label="Дата добавления"
-          value={date}
-          onChange={(value: DateValue) => setDate(value as Date | null)} // ✅ Используем DateValue и кастим
-          required
-          mb="md"
-        />
-
-        {/* Подходы */}
-        {selectedExercise && (
-          <>
-            <Divider my="md" label="Подходы" labelPosition="center" />
-            
-            <Box mb="md">
-              {setsData.map((set, index) => (
-                <Paper 
-                  key={set.id} 
-                  p="xs" 
-                  mb="xs" 
+        {/* Список упражнений с аккордеоном */}
+        <Text size="sm" fw={500} mb="xs">Выберите упражнение:</Text>
+        {filteredExercises.length === 0 ? (
+          <Text c="dimmed" ta="center" py="sm">
+            {loading ? 'Загрузка...' : 'Упражнения не найдены'}
+          </Text>
+        ) : (
+          <Stack gap="xs" mb="md">
+            {filteredExercises.map((ex) => {
+              const isOpen = selectedExercise === ex.id.toString();
+              return (
+                <Paper
+                  key={ex.id}
                   withBorder
-                  style={{ backgroundColor: '#f9f9f9' }}
+                  style={{
+                    cursor: 'pointer',
+                    backgroundColor: isOpen ? '#f0f9ff' : 'transparent',
+                  }}
                 >
-                  <Group grow>
-                    <Text size="sm" fw={500}>
-                      Подход {index + 1}
-                    </Text>
-                    {setsData.length > 1 && (
-                      <ActionIcon 
-                        color="red" 
-                        variant="subtle" 
-                        onClick={() => removeSet(set.id)}
-                      >
-                        <IconTrash size="1rem" />
-                      </ActionIcon>
-                    )}
-                  </Group>
-                  
-                  <Group grow mt="xs">
-                    <NumberInput
-                      label="Повторения"
-                      value={set.reps}
-                      onChange={(value) => {
-                        if (typeof value === 'string') {
-                          updateSetReps(set.id, parseInt(value) || 0);
-                        } else if (typeof value === 'number') {
-                          updateSetReps(set.id, value);
-                        }
-                      }}
-                      min={1}
-                      hideControls
-                    />
-                    
-                    <NumberInput
-                      label="Вес (кг)"
-                      value={set.weight}
-                      onChange={(value) => {
-                        if (typeof value === 'string') {
-                          updateSetWeight(set.id, parseFloat(value) || 0);
-                        } else if (typeof value === 'number') {
-                          updateSetWeight(set.id, value);
-                        }
-                      }}
-                      min={0}
-                      step={0.5}
-                      hideControls
-                    />
-                  </Group>
-                </Paper>
-              ))}
-              
-              <Button 
-                leftSection={<IconPlus size="1rem" />}
-                variant="subtle" 
-                onClick={addSet}
-                fullWidth
-                mt="xs"
-              >
-                Добавить подход
-              </Button>
-            </Box>
-          </>
-        )}
+                  {/* Заголовок упражнения */}
+                  <Box
+                    p="xs"
+                    onClick={() => {
+                      if (isOpen) {
+                        setSelectedExercise(null); // свернуть при повторном клике
+                      } else {
+                        setSelectedExercise(ex.id.toString());
+                      }
+                    }}
+                  >
+                    <Group justify="space-between">
+                      <Text size="sm" fw={500}>{ex.name}</Text>
+                      {ex.muscleGroup && <Badge variant="light" size="sm">{ex.muscleGroup}</Badge>}
+                    </Group>
+                  </Box>
 
-        <Group justify="flex-end" mt="md">
-          <Button variant="subtle" onClick={onClose}>
-            Отмена
-          </Button>
-          <Button 
-            onClick={handleSubmit}
-            disabled={!selectedExercise || setsData.length === 0 || !date}
-          >
-            Добавить упражнение
-          </Button>
-        </Group>
+                  {/* Аккордеон с подходами */}
+                  <Collapse in={isOpen}>
+                    <Box p="xs" pt={0}>
+                      <Divider my="xs" label="Подходы" labelPosition="center" />
+                      {setsData.map((set, index) => (
+                        <Paper 
+                          key={set.id} 
+                          p="xs" 
+                          mb="xs" 
+                          withBorder
+                          style={{ backgroundColor: '#f9f9f9' }}
+                        >
+                          <Group grow>
+                            <Text size="sm" fw={500}>
+                              Подход {index + 1}
+                            </Text>
+                            {setsData.length > 1 && (
+                              <ActionIcon 
+                                color="red" 
+                                variant="subtle" 
+                                onClick={() => removeSet(set.id)}
+                              >
+                                <IconTrash size="1rem" />
+                              </ActionIcon>
+                            )}
+                          </Group>
+                          
+                          <Group grow mt="xs">
+                            <NumberInput
+                              label="Повторения"
+                              value={set.reps}
+                              onChange={(value) => {
+                                if (typeof value === 'string') {
+                                  updateSetReps(set.id, parseInt(value) || 0);
+                                } else if (typeof value === 'number') {
+                                  updateSetReps(set.id, value);
+                                }
+                              }}
+                              min={1}
+                              hideControls
+                            />
+                            
+                            <NumberInput
+                              label="Вес (кг)"
+                              value={set.weight}
+                              onChange={(value) => {
+                                if (typeof value === 'string') {
+                                  updateSetWeight(set.id, parseFloat(value) || 0);
+                                } else if (typeof value === 'number') {
+                                  updateSetWeight(set.id, value);
+                                }
+                              }}
+                              min={0}
+                              step={0.5}
+                              hideControls
+                            />
+                          </Group>
+                        </Paper>
+                      ))}
+                      
+                      <Button 
+                        leftSection={<IconPlus size="1rem" />}
+                        variant="subtle" 
+                        onClick={addSet}
+                        fullWidth
+                        mt="xs"
+                      >
+                        Добавить подход
+                      </Button>
+                    </Box>
+                  </Collapse>
+                </Paper>
+              );
+            })}
+          </Stack>
+        )}
       </Box>
+
+      {/* Плавающая панель кнопок */}
+      <Group
+        justify="flex-end"
+        style={{
+          position: 'sticky',
+          bottom: 0,
+          backgroundColor: 'var(--mantine-color-body)',
+          padding: 'var(--mantine-spacing-md)',
+          borderTop: '1px solid var(--mantine-color-gray-2)',
+          marginTop: 'auto',
+        }}
+      >
+        <Button variant="subtle" onClick={onClose}>
+          Отмена
+        </Button>
+        <Button 
+          onClick={handleSubmit}
+          disabled={!selectedExercise || setsData.length === 0 || !date}
+        >
+          Добавить упражнение
+        </Button>
+      </Group>
     </Modal>
   );
 }
