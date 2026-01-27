@@ -42,17 +42,23 @@ export const useUserStore = create<UserState>((set) => ({
   
   // Новый метод для загрузки текущего пользователя
   loadUser: async () => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    try {
-      set({ loading: true, error: null });
-      const user = await authApi.getCurrentUser();
-      set({ user, isAuthenticated: true, loading: false });
-    } catch (err) { // <-- переименовали переменную
-      console.error('Failed to load user:', err); // <-- используем переменную
-      localStorage.removeItem('token');
-      set({ user: null, isAuthenticated: false, loading: false });
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        set({ loading: true, error: null });
+        const user = await authApi.getCurrentUser();
+        set({ user, isAuthenticated: true, loading: false });
+      } catch (err: unknown) {
+        const error = err as { response?: { status?: number } };
+        // Не удаляем токен автоматически при 401 - даем пользователю шанс
+        // Токен будет удален только при явном логауте или новой авторизации
+        if (error.response?.status === 401) {
+          console.warn('Token expired or invalid, but keeping it for potential refresh');
+        } else {
+          console.error('Failed to load user:', err);
+        }
+        set({ user: null, isAuthenticated: false, loading: false });
+      }
     }
   }
-}
 }));

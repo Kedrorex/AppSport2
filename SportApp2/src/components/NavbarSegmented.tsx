@@ -6,6 +6,7 @@ import {
   IconDatabaseImport,
   IconFileAnalytics,
   IconFingerprint,
+  IconWeight,
   IconKey,
   IconLicense,
   IconLogout,
@@ -51,6 +52,7 @@ const tabs = {
   [SECTION_CONFIG.profile.value]: [
     { link: '/', label: 'Дашборт', icon: IconBellRinging },
     { link: '/training', label: 'Тренировки', icon: IconReceipt2 },
+    { link: '/exercises', label: 'Упражнения', icon: IconWeight },
     { link: '/security', label: 'Security', icon: IconFingerprint },
     { link: '/ssh-keys', label: 'SSH Keys', icon: IconKey },
     { link: '/databases', label: 'Databases', icon: IconDatabaseImport },

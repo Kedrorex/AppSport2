@@ -23,7 +23,6 @@ interface AddExerciseModalProps {
   opened: boolean;
   onClose: () => void;
   onAdd: (exerciseId: number, sets: number, reps: number, weight?: number, date?: Date) => void;
-  workoutId: number;
   selectedDate?: Date;
 }
 

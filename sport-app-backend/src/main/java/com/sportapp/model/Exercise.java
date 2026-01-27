@@ -26,9 +26,6 @@ public class Exercise {
     private String exerciseType;
     
     @OneToMany(mappedBy = "exercise", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<WorkoutExercise> workoutExercises = new ArrayList<>();
-    
-    @OneToMany(mappedBy = "exercise", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ExerciseProgress> exerciseProgresses = new ArrayList<>();
     
     @Column(name = "created_at")
@@ -61,9 +58,6 @@ public class Exercise {
     
     public String getExerciseType() { return exerciseType; }
     public void setExerciseType(String exerciseType) { this.exerciseType = exerciseType; }
-    
-    public List<WorkoutExercise> getWorkoutExercises() { return workoutExercises; }
-    public void setWorkoutExercises(List<WorkoutExercise> workoutExercises) { this.workoutExercises = workoutExercises; }
     
     public List<ExerciseProgress> getExerciseProgresses() { return exerciseProgresses; }
     public void setExerciseProgresses(List<ExerciseProgress> exerciseProgresses) { this.exerciseProgresses = exerciseProgresses; }

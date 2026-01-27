@@ -10,24 +10,24 @@ export interface AuthResponse {
 export const authApi = {
   // Вход в систему
   login: async (credentials: LoginRequest): Promise<AuthResponse> => {
-    const response = await apiClient.post<AuthResponse>('/auth/login', credentials);
+    const response = await apiClient.post<AuthResponse>('/api/auth/login', credentials);
     return response.data;
   },
 
   // Регистрация нового пользователя
   register: async (userData: RegisterRequest): Promise<AuthResponse> => {
-    const response = await apiClient.post<AuthResponse>('/auth/register', userData);
+    const response = await apiClient.post<AuthResponse>('/api/auth/register', userData);
     return response.data;
   },
 
   // Получение информации о текущем пользователе
   getCurrentUser: async (): Promise<User> => {
-    const response = await apiClient.get<User>('/auth/me');
+    const response = await apiClient.get<User>('/api/auth/me');
     return response.data;
   },
 
   // Выход из системы
   logout: async (): Promise<void> => {
-    await apiClient.post('/auth/logout');
+    await apiClient.post('/api/auth/logout');
   }
 };

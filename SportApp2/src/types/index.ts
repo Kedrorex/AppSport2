@@ -26,24 +26,15 @@ export interface Exercise {
   createdAt: string;
 }
 
-export interface WorkoutExercise {
+export interface ScheduledExercise {
   id: number;
-  workoutId: number;
+  userId: number;
+  workoutDate: string; // YYYY-MM-DD
   exerciseId: number;
-  exerciseName?: string;
+  exerciseName: string;
   sets: number;
   reps: number;
   weight?: number;
-  createdAt: string;
-}
-
-export interface Training {
-  id: number;
-  userId: number;
-  workoutDate: string;
-  durationMinutes?: number;
-  notes?: string;
-  workoutExercises?: WorkoutExercise[];
   createdAt: string;
 }
 

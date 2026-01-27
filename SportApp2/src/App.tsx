@@ -4,6 +4,7 @@ import { TrainingComponent } from './components/Training/TrainingComponent';
 import { LoginPage } from './pages/auth/LoginPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
 import { useAuth } from './hooks/useAuth';
+import { ExercisesPage } from './pages/exercises/ExercisesPage';
 
 // Типы для props
 interface AppProps {
@@ -41,6 +42,17 @@ export default function App({ toggleColorScheme, colorScheme }: AppProps) {
               </div>
             </ProtectedRoute>
           } 
+        />
+        <Route
+          path="/exercises"
+          element={
+            <ProtectedRoute>
+              <NavbarSegmented toggleColorScheme={toggleColorScheme} colorScheme={colorScheme} />
+              <div style={{ flex: 1, padding: '20px', overflow: 'auto' }}>
+                <ExercisesPage />
+              </div>
+            </ProtectedRoute>
+          }
         />
         <Route 
           path="/" 

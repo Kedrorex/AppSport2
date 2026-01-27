@@ -1,5 +1,6 @@
 // TrainingPage.tsx
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   IconCalendar,
   IconPlus,
@@ -10,13 +11,13 @@ import {
   IconChevronRight,
   IconClock
 } from '@tabler/icons-react';
-import { 
-  Box, 
-  Paper, 
-  Text, 
-  Group, 
-  Button, 
-  ActionIcon, 
+import {
+  Box,
+  Paper,
+  Text,
+  Group,
+  Button,
+  ActionIcon,
   Menu,
   Badge,
   Card,
@@ -24,97 +25,106 @@ import {
   SimpleGrid,
   Flex
 } from '@mantine/core';
-import { useTrainingsStore } from '../../store/useTrainingsStore';
+import { useScheduledExercisesStore } from '../../store/useScheduledExercisesStore';
+import type { AddScheduledExerciseData } from '../../store/useScheduledExercisesStore';
 import { useExercisesStore } from '../../store/useExercisesStore';
 import { AddExerciseModal } from './AddExerciseModal';
+import { formatDateForComparison } from '../../utils/helpers';
+import classes from './TrainingPage.module.css';
 
 export function TrainingPage() {
-  const { 
-    trainings, 
-    fetchTrainings, 
-    createTraining, 
-    deleteTrainingAsync,
-    addExerciseToTraining
-  } = useTrainingsStore();
-  
+  const navigate = useNavigate();
+  const {
+    exercises: scheduledExercises,
+    fetchExercisesForDate,
+    fetchMonthSummary,
+    addExercise,
+    deleteExercise,
+    loading,
+    error,
+    monthSummary
+  } = useScheduledExercisesStore();
+
   const { fetchExercises } = useExercisesStore();
-  
+
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [addExerciseModalOpened, setAddExerciseModalOpened] = useState(false);
-  const [selectedWorkoutId, setSelectedWorkoutId] = useState<number | null>(null);
+
+  const setSelectedDatePreserveDay = (deltaMonths: number) => {
+    const targetYear = selectedDate.getFullYear();
+    const targetMonth = selectedDate.getMonth() + deltaMonths;
+    const desiredDay = selectedDate.getDate();
+
+    const lastDayOfTargetMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+    const clampedDay = Math.min(desiredDay, lastDayOfTargetMonth);
+
+    setSelectedDate(new Date(targetYear, targetMonth, clampedDay));
+  };
 
   // Загружаем данные при монтировании
   useEffect(() => {
-    fetchTrainings();
     fetchExercises();
-  }, [fetchTrainings, fetchExercises]);
+  }, [fetchExercises]);
 
-  // Получаем тренировки за выбранную дату
-  const getTrainingsForDate = () => {
-    const dateStr = selectedDate.toISOString().split('T')[0];
-    return trainings.filter(training => {
-      const trainingDate = new Date(training.workoutDate).toISOString().split('T')[0];
-      return trainingDate === dateStr;
-    });
+  // Загружаем упражнения при изменении даты
+  useEffect(() => {
+    const dateStr = formatDateForComparison(selectedDate);
+    fetchExercisesForDate(dateStr);
+  }, [selectedDate, fetchExercisesForDate]);
+
+  // Загружаем сводку по месяцу (для маркеров в календаре)
+  useEffect(() => {
+    const from = formatDateForComparison(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1));
+    const to = formatDateForComparison(new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0));
+    fetchMonthSummary(from, to);
+  }, [selectedDate, fetchMonthSummary]);
+
+  // Определяет статус даты по количеству запланированных упражнений
+  const getWorkoutStatusForDate = (year: number, month: number, day: number): 'completed' | 'planned' | null => {
+    const key = formatDateForComparison(new Date(year, month, day));
+    const count = monthSummary[key] ?? 0;
+    return count > 0 ? 'planned' : null;
   };
 
-  // Новый обработчик - открытие модалки для добавления упражнения
+  // Обработчик открытия модалки для добавления упражнения
   const handleAddExercise = () => {
-    setSelectedWorkoutId(null); // Сбросим ID, чтобы модалка не привязывалась к тренировке
     setAddExerciseModalOpened(true);
   };
 
-  const handleDeleteTraining = async (id: number) => {
-    await deleteTrainingAsync(id);
+  const handleDeleteExercise = async (id: number) => {
+    const success = await deleteExercise(id);
+    if (!success) {
+      console.error("Не удалось удалить упражнение");
+    }
   };
 
-  // Новый обработчик - добавление упражнения в тренировку на дату
   const handleAddExerciseToCalendar = async (
-    exerciseId: number, 
-    sets: number, 
-    reps: number, 
-    weight?: number,
-    date?: Date
-  ) => {
-    // Используем дату из модалки, если указана, иначе текущую
-    const actualDate = date || selectedDate;
-    const dateStr = actualDate.toISOString().split('T')[0];
-    
-    const existingTraining = trainings.find(training => { // ✅ const вместо let
-      const trainingDate = new Date(training.workoutDate).toISOString().split('T')[0];
-      return trainingDate === dateStr;
-    });
+  exerciseId: number,
+  sets: number,
+  reps: number,
+  weight?: number,
+  date?: Date
+) => {
+  const actualDate = date || selectedDate;
+  const workoutDate = formatDateForComparison(actualDate);
 
-    let workoutId = existingTraining?.id;
-
-    // Если нет тренировки на эту дату, создаём новую
-    if (!workoutId) {
-      const trainingData = {
-        workoutDate: actualDate.toISOString(),
-        userId: 1, // TODO: Получать ID пользователя из контекста авторизации
-        durationMinutes: 60,
-        notes: ''
-      };
-
-      const result = await createTraining(trainingData);
-      if (result) {
-        workoutId = result.id;
-      } else {
-        console.error("Не удалось создать тренировку");
-        return;
-      }
-    }
-
-    if (workoutId) {
-      await addExerciseToTraining(workoutId, {
-        exerciseId,
-        sets,
-        reps,
-        weight
-      });
-    }
-    setAddExerciseModalOpened(false);
+  // Добавляем упражнение на выбранную дату
+  const exerciseData: AddScheduledExerciseData = {
+    workoutDate,
+    exerciseId,
+    sets,
+    reps,
+    weight
   };
+
+  const success = await addExercise(exerciseData);
+
+  if (!success) {
+    console.error("Не удалось добавить упражнение");
+  }
+
+  setAddExerciseModalOpened(false);
+};
 
   // Функции для календаря
   const getDaysInMonth = (date: Date) => {
@@ -122,8 +132,9 @@ export function TrainingPage() {
   };
 
   const getFirstDayOfMonth = (date: Date) => {
-    return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
-  };
+  const day = new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+  return day === 0 ? 6 : day - 1; // 0 = Пн, 6 = Вс
+};
 
   const generateCalendarDays = () => {
     const daysInMonth = getDaysInMonth(selectedDate);
@@ -134,8 +145,8 @@ export function TrainingPage() {
     for (let i = firstDay - 1; i >= 0; i--) {
       const prevMonth = selectedDate.getMonth() === 0 ? 11 : selectedDate.getMonth() - 1;
       const prevYear = selectedDate.getMonth() === 0 ? selectedDate.getFullYear() - 1 : selectedDate.getFullYear();
-      const day = new Date(prevYear, prevMonth, getDaysInMonth(new Date(prevYear, prevMonth)) - i);
-      days.push({ day: day.getDate(), month: day.getMonth(), year: day.getFullYear(), isCurrentMonth: false });
+      const dayNumber = getDaysInMonth(new Date(prevYear, prevMonth)) - i;
+      days.push({ day: dayNumber, month: prevMonth, year: prevYear, isCurrentMonth: false });
     }
 
     // Дни текущего месяца
@@ -155,26 +166,25 @@ export function TrainingPage() {
   };
 
   const currentDays = generateCalendarDays();
-  const currentTrainings = getTrainingsForDate();
 
   return (
     <Box style={{ height: '100%' }}>
       <Box p="md">
         <Group gap="xs" mb="md">
-          <Button 
-            variant="subtle" 
+          <Button
+            variant="subtle"
             leftSection={<IconCalendar size="1rem" />}
           >
             {selectedDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
           </Button>
-          <Button 
-            variant="subtle" 
+          <Button
+            variant="subtle"
             leftSection={<IconClock size="1rem" />}
           >
             Время
           </Button>
-          <Button 
-            variant="subtle" 
+          <Button
+            variant="subtle"
             leftSection={<IconCalendar size="1rem" />}
           >
             Календарь
@@ -182,130 +192,180 @@ export function TrainingPage() {
         </Group>
 
         {/* Календарь */}
-        <Paper 
-          style={{ 
-            margin: '16px 0',
-            backgroundColor: '#fff',
-            borderRadius: '4px',
-            padding: '16px',
-            border: '1px solid #e0e0e0',
-          }} 
-          withBorder
-        >
-          <Flex justify="space-between" align="center" mb="sm">
-            <Text size="sm" fw={500}>
-              {selectedDate.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })}
-            </Text>
-            <Group gap="xs">
-              <Button 
-                variant="subtle" 
-                onClick={() => setSelectedDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth() - 1))}
-              >
-                <IconChevronLeft size="1rem" />
-              </Button>
-              <Button 
-                variant="subtle" 
-                onClick={() => setSelectedDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1))}
-              >
-                <IconChevronRight size="1rem" />
-              </Button>
-            </Group>
-          </Flex>
-
-          <SimpleGrid cols={7} spacing="xs">
-            {['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'].map((day) => (
-              <Text key={day} size="xs" c="dimmed" ta="center">
-                {day}
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'flex-end', 
+          margin: '16px 0',
+          maxWidth: '100%',
+        }}>
+          <Paper 
+            className={classes.calendar}
+            style={{ 
+              maxWidth: 320,
+              width: '100%',
+            }}
+            withBorder
+          >
+            <Flex justify="space-between" align=" center" mb="sm">
+              <Text size="sm" fw={500}>
+                {selectedDate.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })}
               </Text>
-            ))}
-            
-            {currentDays.map((day, index) => (
-              <div key={index} style={{ textAlign: 'center', padding: '4px' }}>
+              <Group gap="xs">
                 <Button
-                  variant={day.isCurrentMonth && selectedDate.getDate() === day.day ? 'filled' : 'subtle'}
-                  size="xs"
-                  radius="sm"
+                  variant="subtle"
                   onClick={() => {
-                    if (day.isCurrentMonth) {
-                      setSelectedDate(new Date(day.year, day.month, day.day));
-                    }
-                  }}
-                  style={{
-                    backgroundColor: day.isCurrentMonth && selectedDate.getDate() === day.day ? '#1a1a1a' : undefined,
-                    color: day.isCurrentMonth && selectedDate.getDate() === day.day ? 'white' : undefined,
+                    setSelectedDatePreserveDay(-1);
                   }}
                 >
-                  {day.day}
+                  <IconChevronLeft size="1rem" />
                 </Button>
-              </div>
-            ))}
-          </SimpleGrid>
-        </Paper>
+                <Button
+                  variant="subtle"
+                  onClick={() => {
+                    setSelectedDatePreserveDay(1);
+                  }}
+                >
+                  <IconChevronRight size="1rem" />
+                </Button>
+              </Group>
+            </Flex>
 
-        {/* Статистика */}
-        <Group 
-          style={{ 
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            margin: '16px 0',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Text style={{ fontSize: '12px', color: '#888' }}>ТРЕН</Text>
-            <Text style={{ fontSize: '14px', fontWeight: 500 }}>{currentTrainings.length}</Text>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Text style={{ fontSize: '12px', color: '#888' }}>УПР</Text>
-            <Text style={{ fontSize: '14px', fontWeight: 500 }}>
-              {currentTrainings.reduce((acc, training) => 
-                acc + (training.workoutExercises?.length || 0), 0)}
-            </Text>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Text style={{ fontSize: '12px', color: '#888' }}>КГ</Text>
-            <Text style={{ fontSize: '14px', fontWeight: 500 }}>
-              {currentTrainings.reduce((acc, training) => 
-                acc + (training.workoutExercises?.reduce((sum, ex) => 
-                  sum + ((ex.weight || 0) * (ex.reps || 0)), 0) || 0), 0)}
-            </Text>
-          </div>
-        </Group>
+            <SimpleGrid cols={7} spacing="xs">
+              {['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'].map((day) => (
+                <Text key={day} size="xs" c="dimmed" ta="center">
+                  {day}
+                </Text>
+              ))}
+              
+              {currentDays.map((day, index) => {
+                const status = day.isCurrentMonth
+                  ? getWorkoutStatusForDate(day.year, day.month, day.day)
+                  : null;
 
-        {/* Тренировки */}
+                const isSelected = day.isCurrentMonth &&
+                  selectedDate.getDate() === day.day &&
+                  selectedDate.getMonth() === day.month &&
+                  selectedDate.getFullYear() === day.year;
+
+                return (
+                  <Button
+                    key={index}
+                    variant={isSelected ? 'filled' : 'subtle'}
+                    size="xs"
+                    radius="sm"
+                    onClick={() => {
+                      if (day.isCurrentMonth) {
+                        const newDate = new Date(day.year, day.month, day.day);
+                        setSelectedDate(newDate);
+                      }
+                    }}
+                    style={{
+                      backgroundColor: isSelected ? '#1a1a1a' : undefined,
+                      color: isSelected ? 'white' : undefined,
+                      position: 'relative',
+                      display: 'block',
+                      margin: '0 auto',
+                      width: 32,
+                      height: 32,
+                      padding: 0,
+                    }}
+                  >
+                    {day.day}
+                    {status && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          bottom: 2,
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          width: 6,
+                          height: 6,
+                          borderRadius: '50%',
+                          backgroundColor: status === 'completed' ? '#4CAF50' : '#FF9800',
+                        }}
+                      />
+                    )}
+                  </Button>
+                );
+              })}
+            </SimpleGrid>
+          </Paper>
+        </div>
+
+                {/* Статистика */}
+                <Group
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    margin: '16px 0',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Text style={{ fontSize: '12px', color: '#888' }}>УПР</Text>
+                    <Text style={{ fontSize: '14px', fontWeight: 500 }}>{scheduledExercises.length}</Text>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Text style={{ fontSize: '12px', color: '#888' }}>ПОДХОДЫ</Text>
+                    <Text style={{ fontSize: '14px', fontWeight: 500 }}>
+                      {scheduledExercises.reduce((acc, exercise) => acc + exercise.sets, 0)}
+                    </Text>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Text style={{ fontSize: '12px', color: '#888' }}>КГ</Text>
+                    <Text style={{ fontSize: '14px', fontWeight: 500 }}>
+                      {scheduledExercises.reduce((acc, exercise) =>
+                        acc + ((exercise.weight || 0) * exercise.reps * exercise.sets), 0)}
+                    </Text>
+                  </div>
+                </Group>
+
+        {/* Упражнения */}
         <Stack gap="md">
-          {currentTrainings.map((training) => (
-            <Card 
-              key={training.id} 
-              style={{ 
+          {error && (
+            <Stack gap="xs">
+              <Text c="red" ta="center">
+                {error}
+              </Text>
+              <Group justify="center">
+                <Button
+                  variant="light"
+                  onClick={() => fetchExercisesForDate(formatDateForComparison(selectedDate))}
+                >
+                  Повторить
+                </Button>
+              </Group>
+            </Stack>
+          )}
+          {loading && (
+            <Text c="dimmed" ta="center">
+              Загрузка...
+            </Text>
+          )}
+          {scheduledExercises.map((exercise) => (
+            <Card
+              key={exercise.id}
+              style={{
                 backgroundColor: '#fff',
                 borderRadius: '4px',
                 padding: '16px',
                 border: '1px solid #e0e0e0',
-                marginBottom: '16px',
               }}
             >
-              <div style={{ 
+              <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                marginBottom: '16px',
+                marginBottom: '12px',
               }}>
                 <Text style={{ fontSize: '16px', fontWeight: 500 }}>
-                  Тренировка {new Date(training.workoutDate).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                  {exercise.exerciseName}
                 </Text>
-                
+
                 <Group style={{ display: 'flex', gap: '8px' }}>
-                  <ActionIcon 
-                    variant="subtle" 
-                    color="blue" 
-                    onClick={() => {
-                      setSelectedWorkoutId(training.id);
-                      setAddExerciseModalOpened(true);
-                    }}
-                  >
-                    <IconPlus size="1rem" />
-                  </ActionIcon>
+                  <Badge variant="light">
+                    {exercise.sets}×{exercise.reps} {exercise.weight ? `${exercise.weight}кг` : ''}
+                  </Badge>
                   <Menu shadow="md" width={200}>
                     <Menu.Target>
                       <ActionIcon variant="subtle" color="gray">
@@ -313,10 +373,10 @@ export function TrainingPage() {
                       </ActionIcon>
                     </Menu.Target>
                     <Menu.Dropdown>
-                      <Menu.Item 
-                        leftSection={<IconTrash size="1rem" />} 
+                      <Menu.Item
+                        leftSection={<IconTrash size="1rem" />}
                         color="red"
-                        onClick={() => handleDeleteTraining(training.id)}
+                        onClick={() => handleDeleteExercise(exercise.id)}
                       >
                         Удалить
                       </Menu.Item>
@@ -325,44 +385,23 @@ export function TrainingPage() {
                 </Group>
               </div>
 
-              {training.notes && (
-                <Text size="sm" c="dimmed" mb="md">
-                  {training.notes}
-                </Text>
-              )}
-
-              {/* Упражнения в тренировке */}
-              <Stack gap="md">
-                {training.workoutExercises?.map((exercise) => (
-                  <Card key={exercise.id} p="xs" withBorder>
-                    <Group justify="space-between" mb="xs">
-                      <Text size="sm" fw={500}>
-                        {exercise.exerciseName || `Упражнение #${exercise.exerciseId}`}
-                      </Text>
-                      <Badge variant="light">
-                        {exercise.sets}×{exercise.reps} {exercise.weight ? `${exercise.weight}кг` : ''}
-                      </Badge>
-                    </Group>
-                    
-                    <Group gap="xs">
-                      {Array.from({ length: exercise.sets }).map((_, index) => (
-                        <Paper key={index} p="xs" bg="#f5f5f5" style={{ minWidth: 60, textAlign: 'center' }}>
-                          <Text size="xs" c="dimmed">Сет {index + 1}</Text>
-                          <Text size="sm" fw={500}>
-                            {exercise.weight || 0}кг × {exercise.reps}
-                          </Text>
-                        </Paper>
-                      ))}
-                    </Group>
-                  </Card>
+              {/* Сеты упражнения */}
+              <Group gap="xs">
+                {Array.from({ length: exercise.sets }).map((_, index) => (
+                  <Paper key={index} p="xs" bg="#f5f5f5" style={{ minWidth: 60, textAlign: 'center' }}>
+                    <Text size="xs" c="dimmed">Сет {index + 1}</Text>
+                    <Text size="sm" fw={500}>
+                      {exercise.weight || 0}кг × {exercise.reps}
+                    </Text>
+                  </Paper>
                 ))}
-              </Stack>
+              </Group>
             </Card>
           ))}
 
-          {currentTrainings.length === 0 && (
+          {!loading && scheduledExercises.length === 0 && (
             <Text c="dimmed" ta="center" py="xl">
-              Нет тренировок на выбранную дату
+              Нет упражнений на выбранную дату
             </Text>
           )}
         </Stack>
@@ -372,7 +411,7 @@ export function TrainingPage() {
           <Button 
             variant="outline" 
             leftSection={<IconWeight size="1rem" />}
-            onClick={() => {}}
+            onClick={() => navigate('/exercises')}
           >
             Упражнения
           </Button>
@@ -392,11 +431,9 @@ export function TrainingPage() {
         opened={addExerciseModalOpened}
         onClose={() => {
           setAddExerciseModalOpened(false);
-          setSelectedWorkoutId(null);
         }}
         onAdd={handleAddExerciseToCalendar}
-        workoutId={selectedWorkoutId || 0}
-        selectedDate={selectedDate} // Передаём дату в модалку
+        selectedDate={selectedDate}
       />
     </Box>
   );

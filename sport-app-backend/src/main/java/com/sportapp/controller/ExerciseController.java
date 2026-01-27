@@ -1,13 +1,17 @@
 //ExerciseController.java
 package com.sportapp.controller;
 
+import com.sportapp.dto.ExerciseCreateRequest;
 import com.sportapp.dto.ExerciseDTO;
+import com.sportapp.dto.ExerciseUpdateRequest;
 import com.sportapp.mapper.ExerciseMapper;
 import com.sportapp.model.Exercise;
 import com.sportapp.service.ExerciseService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -58,19 +62,26 @@ public class ExerciseController {
     }
     
     @PostMapping
-    public ResponseEntity<ExerciseDTO> createExercise(@RequestBody Exercise exercise) {
+    public ResponseEntity<ExerciseDTO> createExercise(@Valid @RequestBody ExerciseCreateRequest request) {
+        Exercise exercise = new Exercise(
+            request.getName(),
+            request.getDescription(),
+            request.getMuscleGroup(),
+            request.getExerciseType()
+        );
+
         Exercise savedExercise = exerciseService.createExercise(exercise);
         return ResponseEntity.ok(exerciseMapper.toDTO(savedExercise));
     }
     
     @PutMapping("/{id}")
-    public ResponseEntity<ExerciseDTO> updateExercise(@PathVariable Long id, @RequestBody Exercise exercise) {
+    public ResponseEntity<ExerciseDTO> updateExercise(@PathVariable Long id, @Valid @RequestBody ExerciseUpdateRequest request) {
         return exerciseService.getExerciseById(id)
             .map(existingExercise -> {
-                existingExercise.setName(exercise.getName());
-                existingExercise.setDescription(exercise.getDescription());
-                existingExercise.setMuscleGroup(exercise.getMuscleGroup());
-                existingExercise.setExerciseType(exercise.getExerciseType());
+                existingExercise.setName(request.getName());
+                existingExercise.setDescription(request.getDescription());
+                existingExercise.setMuscleGroup(request.getMuscleGroup());
+                existingExercise.setExerciseType(request.getExerciseType());
                 Exercise updatedExercise = exerciseService.updateExercise(existingExercise);
                 return ResponseEntity.ok(exerciseMapper.toDTO(updatedExercise));
             })

@@ -8,7 +8,7 @@
 
 .calendar {
   margin: var(--mantine-spacing-md) 0;
-  background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-6));
+  background-color: light-dark(var(--mantine-color-blue-0), var(--mantine-color-dark-6));
   border-radius: var(--mantine-radius-sm);
   padding: var(--mantine-spacing-md);
   border: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
