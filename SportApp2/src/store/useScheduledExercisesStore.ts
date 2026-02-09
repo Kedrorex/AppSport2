@@ -111,7 +111,9 @@ export const useScheduledExercisesStore = create<ScheduledExercisesState>((set, 
       set({ loading: true, error: null });
       const exercise = await scheduledExercisesApi.create(exerciseData);
       set((state) => ({
-        exercises: [...state.exercises, exercise],
+        exercises: state.currentDate === exercise.workoutDate
+          ? [...state.exercises, exercise]
+          : state.exercises,
         loading: false
       }));
       return true;

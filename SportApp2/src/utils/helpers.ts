@@ -1,13 +1,20 @@
 // Утилиты для работы с датами
+const formatLocalDate = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export const formatDateForAPI = (date: Date): string => {
-  return date.toISOString().split('T')[0];
+  return formatLocalDate(date);
 };
 
 export const formatDateForComparison = (date: Date | string): string => {
   if (typeof date === 'string') {
     return date;
   }
-  return date.toISOString().split('T')[0];
+  return formatLocalDate(date);
 };
 
 // Сравнение дат в формате YYYY-MM-DD

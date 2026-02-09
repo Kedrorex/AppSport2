@@ -51,6 +51,12 @@ export function AddExerciseModal({
     }
   }, [opened, exercises.length, fetchExercises]);
 
+  useEffect(() => {
+    if (opened) {
+      setDate(selectedDate || null);
+    }
+  }, [opened, selectedDate]);
+
   const filteredExercises = useMemo(() => {
     let filtered = exercises;
     if (searchQuery) {

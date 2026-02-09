@@ -167,6 +167,10 @@ export function TrainingPage() {
 
   const currentDays = generateCalendarDays();
 
+  const filteredExercises = scheduledExercises.filter(
+    (exercise) => exercise.workoutDate === formatDateForComparison(selectedDate)
+  );
+
   return (
     <Box style={{ height: '100%' }}>
       <Box p="md">
@@ -303,18 +307,18 @@ export function TrainingPage() {
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Text style={{ fontSize: '12px', color: '#888' }}>УПР</Text>
-                    <Text style={{ fontSize: '14px', fontWeight: 500 }}>{scheduledExercises.length}</Text>
+                    <Text style={{ fontSize: '14px', fontWeight: 500 }}>{filteredExercises.length}</Text>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Text style={{ fontSize: '12px', color: '#888' }}>ПОДХОДЫ</Text>
                     <Text style={{ fontSize: '14px', fontWeight: 500 }}>
-                      {scheduledExercises.reduce((acc, exercise) => acc + exercise.sets, 0)}
+                      {filteredExercises.reduce((acc, exercise) => acc + exercise.sets, 0)}
                     </Text>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Text style={{ fontSize: '12px', color: '#888' }}>КГ</Text>
                     <Text style={{ fontSize: '14px', fontWeight: 500 }}>
-                      {scheduledExercises.reduce((acc, exercise) =>
+                      {filteredExercises.reduce((acc, exercise) =>
                         acc + ((exercise.weight || 0) * exercise.reps * exercise.sets), 0)}
                     </Text>
                   </div>
@@ -342,7 +346,7 @@ export function TrainingPage() {
               Загрузка...
             </Text>
           )}
-          {scheduledExercises.map((exercise) => (
+          {filteredExercises.map((exercise) => (
             <Card
               key={exercise.id}
               style={{
@@ -399,7 +403,7 @@ export function TrainingPage() {
             </Card>
           ))}
 
-          {!loading && scheduledExercises.length === 0 && (
+          {!loading && filteredExercises.length === 0 && (
             <Text c="dimmed" ta="center" py="xl">
               Нет упражнений на выбранную дату
             </Text>
