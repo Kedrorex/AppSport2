@@ -21,11 +21,10 @@ import {
   IconSun,
   IconMoon,
 } from '@tabler/icons-react';
-import { SegmentedControl, Text, ActionIcon } from '@mantine/core';
+import { SegmentedControl, Text, ActionIcon, Burger, Drawer, Group, Stack } from '@mantine/core';
 import { useUserStore } from '../store/useUserStore';
 import classes from './NavbarSegmented.module.css';
 
-// 🔧 Настройки названий секций в одном месте
 const SECTION_CONFIG = {
   profile: {
     value: 'profile',
@@ -39,13 +38,11 @@ const SECTION_CONFIG = {
   }
 } as const;
 
-// Типы для props
 interface NavbarSegmentedProps {
   toggleColorScheme: (value?: 'light' | 'dark') => void;
   colorScheme: 'light' | 'dark';
 }
 
-// Тип для секций
 type SectionKey = keyof typeof SECTION_CONFIG;
 
 const tabs = {
@@ -73,12 +70,18 @@ const tabs = {
 export function NavbarSegmented({ toggleColorScheme, colorScheme }: NavbarSegmentedProps) {
   const [section, setSection] = useState<SectionKey>(SECTION_CONFIG.profile.value);
   const [active, setActive] = useState('Дашборт');
+  const [mobileMenuOpened, setMobileMenuOpened] = useState(false);
   const navigate = useNavigate();
   const { logout } = useUserStore();
 
   const handleLogout = () => {
     logout();
+    setMobileMenuOpened(false);
     navigate('/login');
+  };
+
+  const closeMobileMenu = () => {
+    setMobileMenuOpened(false);
   };
 
   const links = tabs[section].map((item) => (
@@ -89,6 +92,7 @@ export function NavbarSegmented({ toggleColorScheme, colorScheme }: NavbarSegmen
       key={item.label}
       onClick={() => {
         setActive(item.label);
+        closeMobileMenu();
       }}
     >
       <item.icon className={classes.linkIcon} stroke={1.5} />
@@ -96,20 +100,19 @@ export function NavbarSegmented({ toggleColorScheme, colorScheme }: NavbarSegmen
     </Link>
   ));
 
-  return (
-    <nav className={classes.navbar}>
+  const content = (
+    <>
       <div>
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
           alignItems: 'center',
           marginBottom: '8px'
         }}>
           <Text fw={500} size="sm" className={classes.title} c="dimmed">
             {SECTION_CONFIG[section].title}
           </Text>
-          
-          {/* Кнопка смены темы */}
+
           <ActionIcon
             variant="subtle"
             color="gray"
@@ -131,13 +134,13 @@ export function NavbarSegmented({ toggleColorScheme, colorScheme }: NavbarSegmen
           transitionTimingFunction="ease"
           fullWidth
           data={[
-            { 
-              label: SECTION_CONFIG.profile.label, 
-              value: SECTION_CONFIG.profile.value 
+            {
+              label: SECTION_CONFIG.profile.label,
+              value: SECTION_CONFIG.profile.value
             },
-            { 
-              label: SECTION_CONFIG.system.label, 
-              value: SECTION_CONFIG.system.value 
+            {
+              label: SECTION_CONFIG.system.label,
+              value: SECTION_CONFIG.system.value
             },
           ]}
         />
@@ -151,9 +154,9 @@ export function NavbarSegmented({ toggleColorScheme, colorScheme }: NavbarSegmen
           <span>Сменить профиль</span>
         </a>
 
-        <a 
-          href="#" 
-          className={classes.link} 
+        <a
+          href="#"
+          className={classes.link}
           onClick={(e) => {
             e.preventDefault();
             handleLogout();
@@ -163,6 +166,84 @@ export function NavbarSegmented({ toggleColorScheme, colorScheme }: NavbarSegmen
           <span>Выйти</span>
         </a>
       </div>
-    </nav>
+    </>
+  );
+
+  return (
+    <>
+      <div className={classes.mobileTopbar}>
+        <Group gap="xs">
+          <Burger
+            opened={mobileMenuOpened}
+            onClick={() => setMobileMenuOpened((prev) => !prev)}
+            size="sm"
+            aria-label="Открыть меню"
+          />
+          <Text fw={600} size="sm">Sport App</Text>
+        </Group>
+        <ActionIcon
+          variant="subtle"
+          color="gray"
+          onClick={() => toggleColorScheme()}
+          title={`Переключить на ${colorScheme === 'dark' ? 'светлую' : 'темную'} тему`}
+          aria-label="Переключить тему"
+        >
+          {colorScheme === 'dark' ? (
+            <IconSun size="1.1rem" stroke={1.5} />
+          ) : (
+            <IconMoon size="1.1rem" stroke={1.5} />
+          )}
+        </ActionIcon>
+      </div>
+
+      <Drawer
+        opened={mobileMenuOpened}
+        onClose={closeMobileMenu}
+        title="Навигация"
+        size="80%"
+        padding="md"
+      >
+        <Stack className={classes.mobileDrawerBody}>
+          <SegmentedControl
+            value={section}
+            onChange={(value: string) => setSection(value as SectionKey)}
+            transitionTimingFunction="ease"
+            fullWidth
+            data={[
+              {
+                label: SECTION_CONFIG.profile.label,
+                value: SECTION_CONFIG.profile.value
+              },
+              {
+                label: SECTION_CONFIG.system.label,
+                value: SECTION_CONFIG.system.value
+              },
+            ]}
+          />
+
+          <div className={classes.mobileDrawerMain}>{links}</div>
+
+          <div className={classes.footer}>
+            <a href="#" className={classes.link} onClick={(e) => e.preventDefault()}>
+              <IconSwitchHorizontal className={classes.linkIcon} stroke={1.5} />
+              <span>Сменить профиль</span>
+            </a>
+            <a
+              href="#"
+              className={classes.link}
+              onClick={(e) => {
+                e.preventDefault();
+                handleLogout();
+              }}
+            >
+              <IconLogout className={classes.linkIcon} stroke={1.5} />
+              <span>Выйти</span>
+            </a>
+          </div>
+        </Stack>
+      </Drawer>
+
+      <nav className={classes.navbar}>{content}</nav>
+    </>
   );
 }

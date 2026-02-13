@@ -5,6 +5,7 @@ import { LoginPage } from './pages/auth/LoginPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
 import { useAuth } from './hooks/useAuth';
 import { ExercisesPage } from './pages/exercises/ExercisesPage';
+import classes from './App.module.css';
 
 // Типы для props
 interface AppProps {
@@ -24,8 +25,17 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 export default function App({ toggleColorScheme, colorScheme }: AppProps) {
+  const renderProtectedPage = (content: React.ReactNode) => (
+    <ProtectedRoute>
+      <div className={classes.appShell}>
+        <NavbarSegmented toggleColorScheme={toggleColorScheme} colorScheme={colorScheme} />
+        <div className={classes.content}>{content}</div>
+      </div>
+    </ProtectedRoute>
+  );
+
   return (
-    <div style={{ display: 'flex', height: '100vh' }}>
+    <div>
       <Routes>
         {/* Публичные маршруты */}
         <Route path="/login" element={<LoginPage />} />
@@ -34,36 +44,15 @@ export default function App({ toggleColorScheme, colorScheme }: AppProps) {
         {/* Защищенные маршруты */}
         <Route 
           path="/training" 
-          element={
-            <ProtectedRoute>
-              <NavbarSegmented toggleColorScheme={toggleColorScheme} colorScheme={colorScheme} />
-              <div style={{ flex: 1, padding: '20px', overflow: 'auto' }}>
-                <TrainingComponent />
-              </div>
-            </ProtectedRoute>
-          } 
+          element={renderProtectedPage(<TrainingComponent />)} 
         />
         <Route
           path="/exercises"
-          element={
-            <ProtectedRoute>
-              <NavbarSegmented toggleColorScheme={toggleColorScheme} colorScheme={colorScheme} />
-              <div style={{ flex: 1, padding: '20px', overflow: 'auto' }}>
-                <ExercisesPage />
-              </div>
-            </ProtectedRoute>
-          }
+          element={renderProtectedPage(<ExercisesPage />)}
         />
         <Route 
           path="/" 
-          element={
-            <ProtectedRoute>
-              <NavbarSegmented toggleColorScheme={toggleColorScheme} colorScheme={colorScheme} />
-              <div style={{ flex: 1, padding: '20px', overflow: 'auto' }}>
-                <div>Главная страница</div>
-              </div>
-            </ProtectedRoute>
-          } 
+          element={renderProtectedPage(<div>Главная страница</div>)} 
         />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
