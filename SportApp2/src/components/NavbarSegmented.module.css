@@ -7,6 +7,22 @@
   display: flex;
   flex-direction: column;
   border-right: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+  flex-shrink: 0;
+}
+
+.mobileTopbar {
+  display: none;
+}
+
+.mobileDrawerBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-md);
+  min-height: 100%;
+}
+
+.mobileDrawerMain {
+  flex: 1;
 }
 
 .title {
@@ -27,7 +43,6 @@
   width: 100%;
 }
 
-/* ✅ Заменил @mixin на обычные CSS hover стили */
 .link:hover {
   background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
   color: light-dark(var(--mantine-color-black), var(--mantine-color-white));
@@ -51,4 +66,22 @@
   padding-top: var(--mantine-spacing-md);
   margin-top: var(--mantine-spacing-md);
   border-top: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+}
+
+@media (max-width: 768px) {
+  .navbar {
+    display: none;
+  }
+
+  .mobileTopbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    border-bottom: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+    background-color: light-dark(var(--mantine-color-white), var(--mantine-color-dark-6));
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
 }

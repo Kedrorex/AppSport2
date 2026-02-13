@@ -1,4 +1,3 @@
-// TrainingPage.tsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -61,32 +60,27 @@ export function TrainingPage() {
     setSelectedDate(new Date(targetYear, targetMonth, clampedDay));
   };
 
-  // Загружаем данные при монтировании
   useEffect(() => {
     fetchExercises();
   }, [fetchExercises]);
 
-  // Загружаем упражнения при изменении даты
   useEffect(() => {
     const dateStr = formatDateForComparison(selectedDate);
     fetchExercisesForDate(dateStr);
   }, [selectedDate, fetchExercisesForDate]);
 
-  // Загружаем сводку по месяцу (для маркеров в календаре)
   useEffect(() => {
     const from = formatDateForComparison(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1));
     const to = formatDateForComparison(new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0));
     fetchMonthSummary(from, to);
   }, [selectedDate, fetchMonthSummary]);
 
-  // Определяет статус даты по количеству запланированных упражнений
   const getWorkoutStatusForDate = (year: number, month: number, day: number): 'completed' | 'planned' | null => {
     const key = formatDateForComparison(new Date(year, month, day));
     const count = monthSummary[key] ?? 0;
     return count > 0 ? 'planned' : null;
   };
 
-  // Обработчик открытия модалки для добавления упражнения
   const handleAddExercise = () => {
     setAddExerciseModalOpened(true);
   };
@@ -94,54 +88,51 @@ export function TrainingPage() {
   const handleDeleteExercise = async (id: number) => {
     const success = await deleteExercise(id);
     if (!success) {
-      console.error("Не удалось удалить упражнение");
+      console.error('Не удалось удалить упражнение');
     }
   };
 
   const handleAddExerciseToCalendar = async (
-  exerciseId: number,
-  sets: number,
-  reps: number,
-  weight?: number,
-  date?: Date
-) => {
-  const actualDate = date || selectedDate;
-  const workoutDate = formatDateForComparison(actualDate);
+    exerciseId: number,
+    sets: number,
+    reps: number,
+    weight?: number,
+    date?: Date
+  ) => {
+    const actualDate = date || selectedDate;
+    const workoutDate = formatDateForComparison(actualDate);
 
-  // Добавляем упражнение на выбранную дату
-  const exerciseData: AddScheduledExerciseData = {
-    workoutDate,
-    exerciseId,
-    sets,
-    reps,
-    weight
+    const exerciseData: AddScheduledExerciseData = {
+      workoutDate,
+      exerciseId,
+      sets,
+      reps,
+      weight
+    };
+
+    const success = await addExercise(exerciseData);
+
+    if (!success) {
+      console.error('Не удалось добавить упражнение');
+    }
+
+    setAddExerciseModalOpened(false);
   };
 
-  const success = await addExercise(exerciseData);
-
-  if (!success) {
-    console.error("Не удалось добавить упражнение");
-  }
-
-  setAddExerciseModalOpened(false);
-};
-
-  // Функции для календаря
   const getDaysInMonth = (date: Date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
   };
 
   const getFirstDayOfMonth = (date: Date) => {
-  const day = new Date(date.getFullYear(), date.getMonth(), 1).getDay();
-  return day === 0 ? 6 : day - 1; // 0 = Пн, 6 = Вс
-};
+    const day = new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+    return day === 0 ? 6 : day - 1;
+  };
 
   const generateCalendarDays = () => {
     const daysInMonth = getDaysInMonth(selectedDate);
     const firstDay = getFirstDayOfMonth(selectedDate);
     const days = [];
 
-    // Дни предыдущего месяца
     for (let i = firstDay - 1; i >= 0; i--) {
       const prevMonth = selectedDate.getMonth() === 0 ? 11 : selectedDate.getMonth() - 1;
       const prevYear = selectedDate.getMonth() === 0 ? selectedDate.getFullYear() - 1 : selectedDate.getFullYear();
@@ -149,12 +140,10 @@ export function TrainingPage() {
       days.push({ day: dayNumber, month: prevMonth, year: prevYear, isCurrentMonth: false });
     }
 
-    // Дни текущего месяца
     for (let i = 1; i <= daysInMonth; i++) {
       days.push({ day: i, month: selectedDate.getMonth(), year: selectedDate.getFullYear(), isCurrentMonth: true });
     }
 
-    // Дни следующего месяца
     const remainingDays = 42 - days.length;
     for (let i = 1; i <= remainingDays; i++) {
       const nextMonth = selectedDate.getMonth() === 11 ? 0 : selectedDate.getMonth() + 1;
@@ -174,63 +163,31 @@ export function TrainingPage() {
   return (
     <Box style={{ height: '100%' }}>
       <Box p="md">
-        <Group gap="xs" mb="md">
-          <Button
-            variant="subtle"
-            leftSection={<IconCalendar size="1rem" />}
-          >
+        <Group gap="xs" className={classes.filters}>
+          <Button variant="subtle" leftSection={<IconCalendar size="1rem" />}>
             {selectedDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
           </Button>
-          <Button
-            variant="subtle"
-            leftSection={<IconClock size="1rem" />}
-          >
+          <Button variant="subtle" leftSection={<IconClock size="1rem" />}>
             Время
           </Button>
-          <Button
-            variant="subtle"
-            leftSection={<IconCalendar size="1rem" />}
-          >
+          <Button variant="subtle" leftSection={<IconCalendar size="1rem" />}>
             Календарь
           </Button>
         </Group>
 
-        {/* Календарь */}
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'flex-end', 
-          margin: '16px 0',
-          maxWidth: '100%',
-        }}>
-          <Paper 
-            className={classes.calendar}
-            style={{ 
-              maxWidth: 320,
-              width: '100%',
-            }}
-            withBorder
-          >
-            <Flex justify="space-between" align=" center" mb="sm">
+        <div className={classes.calendarWrap}>
+          <Paper className={classes.calendar} withBorder>
+            <Flex justify="space-between" align="center" mb="sm">
               <Text size="sm" fw={500}>
                 {selectedDate.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })}
               </Text>
               <Group gap="xs">
-                <Button
-                  variant="subtle"
-                  onClick={() => {
-                    setSelectedDatePreserveDay(-1);
-                  }}
-                >
+                <ActionIcon variant="subtle" onClick={() => setSelectedDatePreserveDay(-1)}>
                   <IconChevronLeft size="1rem" />
-                </Button>
-                <Button
-                  variant="subtle"
-                  onClick={() => {
-                    setSelectedDatePreserveDay(1);
-                  }}
-                >
+                </ActionIcon>
+                <ActionIcon variant="subtle" onClick={() => setSelectedDatePreserveDay(1)}>
                   <IconChevronRight size="1rem" />
-                </Button>
+                </ActionIcon>
               </Group>
             </Flex>
 
@@ -240,7 +197,7 @@ export function TrainingPage() {
                   {day}
                 </Text>
               ))}
-              
+
               {currentDays.map((day, index) => {
                 const status = day.isCurrentMonth
                   ? getWorkoutStatusForDate(day.year, day.month, day.day)
@@ -296,35 +253,26 @@ export function TrainingPage() {
           </Paper>
         </div>
 
-                {/* Статистика */}
-                <Group
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    margin: '16px 0',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Text style={{ fontSize: '12px', color: '#888' }}>УПР</Text>
-                    <Text style={{ fontSize: '14px', fontWeight: 500 }}>{filteredExercises.length}</Text>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Text style={{ fontSize: '12px', color: '#888' }}>ПОДХОДЫ</Text>
-                    <Text style={{ fontSize: '14px', fontWeight: 500 }}>
-                      {filteredExercises.reduce((acc, exercise) => acc + exercise.sets, 0)}
-                    </Text>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Text style={{ fontSize: '12px', color: '#888' }}>КГ</Text>
-                    <Text style={{ fontSize: '14px', fontWeight: 500 }}>
-                      {filteredExercises.reduce((acc, exercise) =>
-                        acc + ((exercise.weight || 0) * exercise.reps * exercise.sets), 0)}
-                    </Text>
-                  </div>
-                </Group>
+        <Group className={classes.stats}>
+          <div className={classes.statItem}>
+            <Text className={classes.statLabel}>УПР</Text>
+            <Text className={classes.statValue}>{filteredExercises.length}</Text>
+          </div>
+          <div className={classes.statItem}>
+            <Text className={classes.statLabel}>ПОДХОДЫ</Text>
+            <Text className={classes.statValue}>
+              {filteredExercises.reduce((acc, exercise) => acc + exercise.sets, 0)}
+            </Text>
+          </div>
+          <div className={classes.statItem}>
+            <Text className={classes.statLabel}>КГ</Text>
+            <Text className={classes.statValue}>
+              {filteredExercises.reduce((acc, exercise) =>
+                acc + ((exercise.weight || 0) * exercise.reps * exercise.sets), 0)}
+            </Text>
+          </div>
+        </Group>
 
-        {/* Упражнения */}
         <Stack gap="md">
           {error && (
             <Stack gap="xs">
@@ -347,21 +295,8 @@ export function TrainingPage() {
             </Text>
           )}
           {filteredExercises.map((exercise) => (
-            <Card
-              key={exercise.id}
-              style={{
-                backgroundColor: '#fff',
-                borderRadius: '4px',
-                padding: '16px',
-                border: '1px solid #e0e0e0',
-              }}
-            >
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '12px',
-              }}>
+            <Card key={exercise.id} className={classes.exerciseCard}>
+              <div className={classes.exerciseHeader}>
                 <Text style={{ fontSize: '16px', fontWeight: 500 }}>
                   {exercise.exerciseName}
                 </Text>
@@ -389,7 +324,6 @@ export function TrainingPage() {
                 </Group>
               </div>
 
-              {/* Сеты упражнения */}
               <Group gap="xs">
                 {Array.from({ length: exercise.sets }).map((_, index) => (
                   <Paper key={index} p="xs" bg="#f5f5f5" style={{ minWidth: 60, textAlign: 'center' }}>
@@ -410,18 +344,17 @@ export function TrainingPage() {
           )}
         </Stack>
 
-        {/* Кнопка добавления упражнения */}
-        <Group justify="space-between" mt="md">
-          <Button 
-            variant="outline" 
+        <Group className={classes.actionsRow} mt="md">
+          <Button
+            variant="outline"
             leftSection={<IconWeight size="1rem" />}
             onClick={() => navigate('/exercises')}
           >
             Упражнения
           </Button>
-          <Button 
-            variant="filled" 
-            color="green" 
+          <Button
+            variant="filled"
+            color="green"
             rightSection={<IconPlus size="1rem" />}
             onClick={handleAddExercise}
           >
@@ -430,7 +363,6 @@ export function TrainingPage() {
         </Group>
       </Box>
 
-      {/* Модальное окно добавления упражнения */}
       <AddExerciseModal
         opened={addExerciseModalOpened}
         onClose={() => {
