@@ -1,5 +1,5 @@
 # 1. Используем официальный образ OpenJDK 17
-FROM openjdk:17-jdk
+FROM eclipse-temurin:17-jdk-alpine
 
 # 2. Рабочая директория внутри контейнера
 WORKDIR /app
