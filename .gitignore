@@ -9,6 +9,7 @@ node_modules
 dist
 dist-ssr
 *.local
+sport-app-backend/target/
 
 # =========================
 # IntelliJ IDEA / VS Code
