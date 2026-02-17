@@ -1,5 +1,5 @@
 # 1. Используем официальный образ OpenJDK 17
-FROM openjdk:17-jdk-slim
+FROM openjdk:17-jdk
 
 # 2. Рабочая директория внутри контейнера
 WORKDIR /app
