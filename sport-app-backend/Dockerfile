@@ -1,23 +1,20 @@
-# 1. Используем официальный образ OpenJDK 17
-FROM eclipse-temurin:17-jdk-alpine
+FROM maven:3.9.9-eclipse-temurin-17 AS build
+WORKDIR /build
 
-# 2. Рабочая директория внутри контейнера
+COPY pom.xml ./
+RUN mvn -B -ntp dependency:go-offline
+
+COPY src ./src
+RUN mvn -B -ntp clean package -DskipTests
+
+FROM eclipse-temurin:17-jre-jammy AS runtime
 WORKDIR /app
 
-# 3. Копируем Maven файлы для сборки
-COPY pom.xml .
-COPY src ./src
+RUN groupadd --system app && useradd --system --gid app app
 
-# 4. Устанавливаем Maven и собираем проект
-RUN apt-get update && \
-    apt-get install -y maven && \
-    mvn clean package -DskipTests
+COPY --from=build /build/target/*.jar /app/app.jar
 
-# 5. Копируем собранный JAR
-COPY target/*.jar app.jar
-
-# 6. Открываем порт 8080
 EXPOSE 8080
 
-# 7. Команда для запуска Spring Boot
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+USER app
+ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-jar", "/app/app.jar"]
