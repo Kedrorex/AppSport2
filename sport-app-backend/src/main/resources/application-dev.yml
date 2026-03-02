@@ -26,7 +26,8 @@ jwt:
 
 app:
   superadmin:
-    email: ${APP_SUPERADMIN_EMAIL:}
+    email: ${APP_SUPERADMIN_EMAIL:admin@example.com}
+    password: ${APP_SUPERADMIN_PASSWORD:admin123}
   security:
     cors:
       allowed-origin-patterns:
