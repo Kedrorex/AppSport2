@@ -18,9 +18,10 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.access.expression.DefaultWebSecurityExpressionHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler;
+import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -57,21 +58,31 @@ public class SecurityConfig {
         return authConfig.getAuthenticationManager();
     }
 
+    /**
+     * Role hierarchy:
+     * SUPERD > ADMIN > TRAINER > USER
+     */
     @Bean
     public RoleHierarchy roleHierarchy() {
-        return RoleHierarchyImpl.withDefaultRolePrefix()
-            .role("SUPERD").implies("ADMIN")
-            .role("ADMIN").implies("TRAINER")
-            .role("TRAINER").implies("USER")
-            .build();
+        RoleHierarchyImpl hierarchy = new RoleHierarchyImpl();
+        hierarchy.setHierarchy("""
+            ROLE_SUPERD > ROLE_ADMIN
+            ROLE_ADMIN > ROLE_TRAINER
+            ROLE_TRAINER > ROLE_USER
+        """);
+        return hierarchy;
     }
 
-    @Bean
-    public DefaultWebSecurityExpressionHandler webSecurityExpressionHandler(RoleHierarchy roleHierarchy) {
-        DefaultWebSecurityExpressionHandler expressionHandler = new DefaultWebSecurityExpressionHandler();
-        expressionHandler.setRoleHierarchy(roleHierarchy);
-        return expressionHandler;
-    }
+    /**
+     * Enable role hierarchy for @PreAuthorize
+     */
+    // @Bean
+    // public MethodSecurityExpressionHandler methodSecurityExpressionHandler(RoleHierarchy roleHierarchy) {
+    //     DefaultMethodSecurityExpressionHandler handler =
+    //             new DefaultMethodSecurityExpressionHandler();
+    //     handler.setRoleHierarchy(roleHierarchy);
+    //     return handler;
+    // }
 
     @Bean
     @Profile("prod")
@@ -89,13 +100,12 @@ public class SecurityConfig {
 
     @Bean
     @Profile("dev")
-    public SecurityFilterChain devFilterChain(HttpSecurity http, DefaultWebSecurityExpressionHandler expressionHandler) throws Exception {
+    public SecurityFilterChain devFilterChain(HttpSecurity http) throws Exception {
         http
             .cors(AbstractHttpConfigurer::disable)
             .csrf(AbstractHttpConfigurer::disable)
             .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()))
             .authorizeHttpRequests(authz -> authz
-                .expressionHandler(expressionHandler)
                 .requestMatchers(new AntPathRequestMatcher("/h2-console/**")).permitAll()
                 .requestMatchers(new AntPathRequestMatcher("/api/auth/**")).permitAll()
                 .requestMatchers(new AntPathRequestMatcher("/api/super/**")).hasRole("SUPERD")
@@ -107,16 +117,17 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 
     @Bean
     @Profile("prod")
-    public SecurityFilterChain prodFilterChain(HttpSecurity http, DefaultWebSecurityExpressionHandler expressionHandler) throws Exception {
-        http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
+    public SecurityFilterChain prodFilterChain(HttpSecurity http) throws Exception {
+        http
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(authz -> authz
-                .expressionHandler(expressionHandler)
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/super/**").hasRole("SUPERD")
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
@@ -127,6 +138,7 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 }
