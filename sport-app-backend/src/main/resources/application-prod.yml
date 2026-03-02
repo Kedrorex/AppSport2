@@ -36,6 +36,7 @@ jwt:
 app:
   superadmin:
     email: ${APP_SUPERADMIN_EMAIL:}
+    password: ${APP_SUPERADMIN_PASSWORD:}
   security:
     cors:
       allowed-origin-patterns:

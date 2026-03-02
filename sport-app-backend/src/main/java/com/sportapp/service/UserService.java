@@ -91,16 +91,6 @@ public class UserService implements UserDetailsService {
         return userRepository.save(targetUser);
     }
 
-    @Transactional
-    public void assignSuperAdminIfConfigured(String email) {
-        userRepository.findByEmail(email).ifPresent(user -> {
-            if (user.getRole() != Role.SUPERD) {
-                user.setRole(Role.SUPERD);
-                userRepository.save(user);
-            }
-        });
-    }
-
     private User getCurrentAuthenticatedUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return findByEmail(email);
