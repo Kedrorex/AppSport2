@@ -1,23 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  Icon2fa,
   IconBellRinging,
-  IconDatabaseImport,
-  IconFileAnalytics,
-  IconFingerprint,
   IconWeight,
-  IconKey,
-  IconLicense,
   IconLogout,
-  IconMessage2,
-  IconMessages,
   IconReceipt2,
-  IconReceiptRefund,
-  IconSettings,
-  IconShoppingCart,
   IconSwitchHorizontal,
-  IconUsers,
   IconSun,
   IconMoon,
 } from '@tabler/icons-react';
@@ -33,7 +21,7 @@ const SECTION_CONFIG = {
   },
   system: {
     value: 'system',
-    label: 'Система',
+    label: 'Администрирование',
     title: 'Системные настройки'
   }
 } as const;
@@ -49,21 +37,9 @@ const tabs = {
   [SECTION_CONFIG.profile.value]: [
     { link: '/', label: 'Дашборт', icon: IconBellRinging },
     { link: '/training', label: 'Тренировки', icon: IconReceipt2 },
-    { link: '/exercises', label: 'Упражнения', icon: IconWeight },
-    { link: '/security', label: 'Security', icon: IconFingerprint },
-    { link: '/ssh-keys', label: 'SSH Keys', icon: IconKey },
-    { link: '/databases', label: 'Databases', icon: IconDatabaseImport },
-    { link: '/authentication', label: 'Authentication', icon: Icon2fa },
-    { link: '/settings', label: 'Other Settings', icon: IconSettings },
   ],
   [SECTION_CONFIG.system.value]: [
-    { link: '/orders', label: 'Orders', icon: IconShoppingCart },
-    { link: '/receipts', label: 'Receipts', icon: IconLicense },
-    { link: '/reviews', label: 'Reviews', icon: IconMessage2 },
-    { link: '/messages', label: 'Messages', icon: IconMessages },
-    { link: '/customers', label: 'Customers', icon: IconUsers },
-    { link: '/refunds', label: 'Refunds', icon: IconReceiptRefund },
-    { link: '/files', label: 'Files', icon: IconFileAnalytics },
+    { link: '/exercises', label: 'Упражнения', icon: IconWeight },
   ],
 };
 

@@ -21,7 +21,7 @@ spring:
       path: /h2-console
 
 jwt:
-  secret: mysupersecretkeyforlocaldev
+  secret: l9Hlc0nMwOBcLIMT5haVcshwniUj1677CzOXywqozbgWcbCEg9P7ZP680iJIooIl
   expiration: 86400000
 
 app:

@@ -21,6 +21,7 @@ Backend application for Sport App built with Spring Boot, Java 17, and H2/Postgr
 ### Установка и запуск
 cd sport-app-backend
 mvn spring-boot:run
+mvn "-Dspring-boot.run.profiles=dev" spring-boot:run
 
 1. **Клонируй репозиторий**
 ```bash
