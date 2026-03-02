@@ -1,5 +1,6 @@
 package com.sportapp.util;
 
+import com.sportapp.security.UserDetailsImpl;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,7 +23,6 @@ public class JwtUtil {
     private Long expiration;
 
     private SecretKey getSigningKey() {
-        // Убеждаемся, что ключ достаточно длинный (минимум 512 бит для HS512)
         if (secret.length() < 64) {
             throw new IllegalArgumentException("JWT secret must be at least 64 characters long for HS512");
         }
@@ -44,7 +44,7 @@ public class JwtUtil {
 
     private Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
-                .setSigningKey(getSigningKey()) // Используем ключ из properties
+                .setSigningKey(getSigningKey())
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
@@ -56,6 +56,9 @@ public class JwtUtil {
 
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
+        if (userDetails instanceof UserDetailsImpl details) {
+            claims.put("role", details.getUser().getRole().name());
+        }
         return createToken(claims, userDetails.getUsername());
     }
 
@@ -65,7 +68,7 @@ public class JwtUtil {
                 .setSubject(subject)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + expiration))
-                .signWith(getSigningKey(), SignatureAlgorithm.HS512) // Используем ключ из properties
+                .signWith(getSigningKey(), SignatureAlgorithm.HS512)
                 .compact();
     }
 

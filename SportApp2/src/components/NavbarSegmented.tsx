@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   IconBellRinging,
@@ -8,6 +8,8 @@ import {
   IconSwitchHorizontal,
   IconSun,
   IconMoon,
+  IconShield,
+  IconStar,
 } from '@tabler/icons-react';
 import { SegmentedControl, Text, ActionIcon, Burger, Drawer, Group, Stack } from '@mantine/core';
 import { useUserStore } from '../store/useUserStore';
@@ -33,31 +35,34 @@ interface NavbarSegmentedProps {
 
 type SectionKey = keyof typeof SECTION_CONFIG;
 
-const tabs = {
-  [SECTION_CONFIG.profile.value]: [
-    { link: '/', label: 'Дашборт', icon: IconBellRinging },
-    { link: '/training', label: 'Тренировки', icon: IconReceipt2 },
-  ],
-  [SECTION_CONFIG.system.value]: [
-    { link: '/exercises', label: 'Упражнения', icon: IconWeight },
-  ],
-};
-
 export function NavbarSegmented({ toggleColorScheme, colorScheme }: NavbarSegmentedProps) {
   const [section, setSection] = useState<SectionKey>(SECTION_CONFIG.profile.value);
   const [active, setActive] = useState('Дашборт');
   const [mobileMenuOpened, setMobileMenuOpened] = useState(false);
   const navigate = useNavigate();
-  const { logout } = useUserStore();
+  const { logout, user } = useUserStore();
+
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPERD';
+  const isSuperd = user?.role === 'SUPERD';
+  const isTrainer = user?.role === 'TRAINER' || isAdmin;
+
+  const tabs = useMemo(() => ({
+    [SECTION_CONFIG.profile.value]: [
+      { link: '/', label: 'Дашборт', icon: IconBellRinging },
+      { link: '/training', label: 'Тренировки', icon: IconReceipt2 },
+      ...(isTrainer ? [{ link: '/trainer', label: 'Тренер', icon: IconWeight }] : []),
+    ],
+    [SECTION_CONFIG.system.value]: [
+      ...(isAdmin ? [{ link: '/admin', label: 'Админка', icon: IconShield }] : []),
+      ...(isSuperd ? [{ link: '/super', label: 'SUPERD', icon: IconStar }] : []),
+      { link: '/exercises', label: 'Упражнения', icon: IconWeight },
+    ],
+  }), [isAdmin, isSuperd, isTrainer]);
 
   const handleLogout = () => {
     logout();
     setMobileMenuOpened(false);
     navigate('/login');
-  };
-
-  const closeMobileMenu = () => {
-    setMobileMenuOpened(false);
   };
 
   const links = tabs[section].map((item) => (
@@ -68,7 +73,7 @@ export function NavbarSegmented({ toggleColorScheme, colorScheme }: NavbarSegmen
       key={item.label}
       onClick={() => {
         setActive(item.label);
-        closeMobileMenu();
+        setMobileMenuOpened(false);
       }}
     >
       <item.icon className={classes.linkIcon} stroke={1.5} />
@@ -76,15 +81,15 @@ export function NavbarSegmented({ toggleColorScheme, colorScheme }: NavbarSegmen
     </Link>
   ));
 
+  const sectionData = [
+    { label: SECTION_CONFIG.profile.label, value: SECTION_CONFIG.profile.value },
+    ...(isAdmin ? [{ label: SECTION_CONFIG.system.label, value: SECTION_CONFIG.system.value }] : []),
+  ];
+
   const content = (
     <>
       <div>
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '8px'
-        }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
           <Text fw={500} size="sm" className={classes.title} c="dimmed">
             {SECTION_CONFIG[section].title}
           </Text>
@@ -96,11 +101,7 @@ export function NavbarSegmented({ toggleColorScheme, colorScheme }: NavbarSegmen
             title={`Переключить на ${colorScheme === 'dark' ? 'светлую' : 'темную'} тему`}
             aria-label="Переключить тему"
           >
-            {colorScheme === 'dark' ? (
-              <IconSun size="1.2rem" stroke={1.5} />
-            ) : (
-              <IconMoon size="1.2rem" stroke={1.5} />
-            )}
+            {colorScheme === 'dark' ? <IconSun size="1.2rem" stroke={1.5} /> : <IconMoon size="1.2rem" stroke={1.5} />}
           </ActionIcon>
         </div>
 
@@ -109,16 +110,7 @@ export function NavbarSegmented({ toggleColorScheme, colorScheme }: NavbarSegmen
           onChange={(value: string) => setSection(value as SectionKey)}
           transitionTimingFunction="ease"
           fullWidth
-          data={[
-            {
-              label: SECTION_CONFIG.profile.label,
-              value: SECTION_CONFIG.profile.value
-            },
-            {
-              label: SECTION_CONFIG.system.label,
-              value: SECTION_CONFIG.system.value
-            },
-          ]}
+          data={sectionData}
         />
       </div>
 
@@ -130,14 +122,7 @@ export function NavbarSegmented({ toggleColorScheme, colorScheme }: NavbarSegmen
           <span>Сменить профиль</span>
         </a>
 
-        <a
-          href="#"
-          className={classes.link}
-          onClick={(e) => {
-            e.preventDefault();
-            handleLogout();
-          }}
-        >
+        <a href="#" className={classes.link} onClick={(e) => { e.preventDefault(); handleLogout(); }}>
           <IconLogout className={classes.linkIcon} stroke={1.5} />
           <span>Выйти</span>
         </a>
@@ -149,69 +134,30 @@ export function NavbarSegmented({ toggleColorScheme, colorScheme }: NavbarSegmen
     <>
       <div className={classes.mobileTopbar}>
         <Group gap="xs">
-          <Burger
-            opened={mobileMenuOpened}
-            onClick={() => setMobileMenuOpened((prev) => !prev)}
-            size="sm"
-            aria-label="Открыть меню"
-          />
+          <Burger opened={mobileMenuOpened} onClick={() => setMobileMenuOpened((prev) => !prev)} size="sm" aria-label="Открыть меню" />
           <Text fw={600} size="sm">Sport App</Text>
         </Group>
-        <ActionIcon
-          variant="subtle"
-          color="gray"
-          onClick={() => toggleColorScheme()}
-          title={`Переключить на ${colorScheme === 'dark' ? 'светлую' : 'темную'} тему`}
-          aria-label="Переключить тему"
-        >
-          {colorScheme === 'dark' ? (
-            <IconSun size="1.1rem" stroke={1.5} />
-          ) : (
-            <IconMoon size="1.1rem" stroke={1.5} />
-          )}
+        <ActionIcon variant="subtle" color="gray" onClick={() => toggleColorScheme()} title={`Переключить на ${colorScheme === 'dark' ? 'светлую' : 'темную'} тему`} aria-label="Переключить тему">
+          {colorScheme === 'dark' ? <IconSun size="1.1rem" stroke={1.5} /> : <IconMoon size="1.1rem" stroke={1.5} />}
         </ActionIcon>
       </div>
 
-      <Drawer
-        opened={mobileMenuOpened}
-        onClose={closeMobileMenu}
-        title="Навигация"
-        size="80%"
-        padding="md"
-      >
+      <Drawer opened={mobileMenuOpened} onClose={() => setMobileMenuOpened(false)} title="Навигация" size="80%" padding="md">
         <Stack className={classes.mobileDrawerBody}>
           <SegmentedControl
             value={section}
             onChange={(value: string) => setSection(value as SectionKey)}
             transitionTimingFunction="ease"
             fullWidth
-            data={[
-              {
-                label: SECTION_CONFIG.profile.label,
-                value: SECTION_CONFIG.profile.value
-              },
-              {
-                label: SECTION_CONFIG.system.label,
-                value: SECTION_CONFIG.system.value
-              },
-            ]}
+            data={sectionData}
           />
-
           <div className={classes.mobileDrawerMain}>{links}</div>
-
           <div className={classes.footer}>
             <a href="#" className={classes.link} onClick={(e) => e.preventDefault()}>
               <IconSwitchHorizontal className={classes.linkIcon} stroke={1.5} />
               <span>Сменить профиль</span>
             </a>
-            <a
-              href="#"
-              className={classes.link}
-              onClick={(e) => {
-                e.preventDefault();
-                handleLogout();
-              }}
-            >
+            <a href="#" className={classes.link} onClick={(e) => { e.preventDefault(); handleLogout(); }}>
               <IconLogout className={classes.linkIcon} stroke={1.5} />
               <span>Выйти</span>
             </a>
